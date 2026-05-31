@@ -1,12 +1,11 @@
-import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { LogIn, UserPlus, Mail, Lock, User, Users, Eye, EyeOff, Sparkles, BookOpen, Globe } from 'lucide-react'
+import { useState, type FormEvent } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { BookOpen, Eye, EyeOff, Lock, LogIn, Mail, ShieldCheck, Sparkles, User, UserPlus, Users } from 'lucide-react'
 import { useAuthStore } from '../store/useAuthStore'
-import { useI18nStore } from '../store/useI18nStore'
 
 export default function AuthPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login')
-  const [email, setEmail] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
   const [groupName, setGroupName] = useState('')
@@ -16,54 +15,51 @@ export default function AuthPage() {
   const [submitting, setSubmitting] = useState(false)
 
   const { signIn, signUp } = useAuthStore()
-  const { language, setLanguage } = useI18nStore()
 
-  const t = (key: string) => {
-    const translations: Record<string, Record<string, string>> = {
-      welcome: { uz: 'Lernify CS ga Xush Kelibsiz', ru: 'Добро пожаловать в Lernify CS', en: 'Welcome to Lernify CS' },
-      subtitle: { uz: 'Raqamli pedagogika va dasturlash', ru: 'Цифровая педагогика и программирование', en: 'Digital Pedagogy & Programming' },
-      login: { uz: 'Kirish', ru: 'Войти', en: 'Log In' },
-      register: { uz: "Ro'yxatdan o'tish", ru: 'Регистрация', en: 'Register' },
-      email: { uz: 'Email', ru: 'Email', en: 'Email' },
-      password: { uz: 'Parol', ru: 'Пароль', en: 'Password' },
-      fullName: { uz: "To'liq ism", ru: 'Полное имя', en: 'Full Name' },
-      group: { uz: 'Guruh nomi', ru: 'Название группы', en: 'Group Name' },
-      noAccount: { uz: "Hisobingiz yo'qmi?", ru: 'Нет аккаунта?', en: "Don't have an account?" },
-      hasAccount: { uz: 'Hisobingiz bormi?', ru: 'Есть аккаунт?', en: 'Already have an account?' },
-      loginBtn: { uz: 'Tizimga kirish', ru: 'Войти в систему', en: 'Sign In' },
-      registerBtn: { uz: "Ro'yxatdan o'tish", ru: 'Зарегистрироваться', en: 'Sign Up' },
-      registerSuccess: { uz: "Ro'yxatdan muvaffaqiyatli o'tdingiz! Email ni tasdiqlang.", ru: 'Регистрация успешна! Подтвердите email.', en: 'Registration successful! Please confirm your email.' },
-      passwordMin: { uz: 'Parol kamida 6 ta belgidan iborat bo\'lishi kerak', ru: 'Пароль должен содержать минимум 6 символов', en: 'Password must be at least 6 characters' },
-    }
-    return translations[key]?.[language] || translations[key]?.en || key
+  const switchMode = (nextMode: 'login' | 'register') => {
+    setMode(nextMode)
+    setError('')
+    setSuccess('')
+    setPassword('')
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError('')
     setSuccess('')
 
+    if (!identifier.trim()) {
+      setError('Email kiriting')
+      return
+    }
+
     if (password.length < 6) {
-      setError(t('passwordMin'))
+      setError("Parol kamida 6 ta belgidan iborat bo'lishi kerak")
       return
     }
 
     setSubmitting(true)
 
     if (mode === 'login') {
-      const result = await signIn(email, password)
+      const result = await signIn(identifier, password)
       if (result.error) setError(result.error)
     } else {
       if (!fullName.trim()) {
-        setError(language === 'uz' ? 'Ism kiriting' : language === 'ru' ? 'Введите имя' : 'Enter your name')
+        setError("To'liq ism kiriting")
         setSubmitting(false)
         return
       }
-      const result = await signUp(email, password, fullName, groupName)
+
+      const result = await signUp(identifier, password, fullName, groupName)
       if (result.error) {
         setError(result.error)
       } else {
-        setSuccess(t('registerSuccess'))
+        setSuccess("Siz muvaffaqiyatli ro'yxatdan o'tdingiz! Endi tizimga kirishingiz mumkin.")
+        setTimeout(() => {
+          setMode('login')
+          setPassword('')
+          // Keep identifier (email) for easier login
+        }, 2000)
       }
     }
 
@@ -71,163 +67,155 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden" style={{ background: '#070912' }}>
-      {/* Dynamic Background Elements */}
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-[#070912]">
       <div className="absolute inset-0 z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-500/10 blur-[120px] rounded-full animate-pulse" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/10 blur-[120px] rounded-full animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-500/10 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/10 blur-[120px] rounded-full" />
         <div className="scanline" />
       </div>
 
       <motion.div
-        initial={{ opacity: 0, y: 30, scale: 0.95 }}
+        initial={{ opacity: 0, y: 24, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
+        transition={{ duration: 0.5 }}
         className="w-full max-w-md relative z-10"
       >
-        {/* Language Switcher */}
-        <div className="flex justify-center mb-8">
-          <div className="flex items-center gap-1 p-1 rounded-2xl bg-white/[0.03] border border-white/[0.06] backdrop-blur-md">
-            {(['uz', 'ru', 'en'] as const).map(lang => (
-              <button
-                key={lang}
-                onClick={() => setLanguage(lang)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 ${
-                  language === lang
-                    ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-400 border border-cyan-500/30 shadow-[0_0_15px_rgba(0,240,255,0.2)]'
-                    : 'text-white/40 hover:text-white/70'
-                }`}
-              >
-                {lang.toUpperCase()}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Logo Section */}
-        <div className="text-center mb-10">
-          <motion.div
-            initial={{ rotate: -10, scale: 0.8 }}
-            animate={{ rotate: 0, scale: 1 }}
-            transition={{ type: 'spring', stiffness: 100, damping: 10 }}
-            className="w-24 h-24 mx-auto mb-6 rounded-3xl flex items-center justify-center relative group"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 to-purple-600 blur-xl opacity-20 group-hover:opacity-40 transition-opacity" />
+        <div className="text-center mb-8">
+          <div className="w-20 h-20 mx-auto mb-5 rounded-3xl flex items-center justify-center relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 to-purple-600 blur-xl opacity-25" />
             <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 to-purple-600 rounded-3xl" />
-            <BookOpen size={44} className="text-white relative z-10" />
+            <BookOpen size={38} className="text-white relative z-10" />
             <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-white flex items-center justify-center text-cyan-600 shadow-xl">
               <Sparkles size={16} />
             </div>
-          </motion.div>
-          
+          </div>
+
           <h1 className="text-4xl font-black text-white tracking-tighter mb-2">
-            <span className="cyber-gradient-text">LERNIFY</span>
-            <span className="text-white/40 ml-2 font-light">CS</span>
+            <span className="cyber-gradient-text">DigitalEdu</span>
           </h1>
-          <p className="text-white/40 text-sm font-medium tracking-wide uppercase">
-            {t('subtitle')}
-          </p>
+          <p className="text-white/45 text-sm font-medium">Rollar asosidagi ta'lim platformasi</p>
         </div>
 
-        {/* Auth Card */}
-        <div className="glass-panel p-8 relative group overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-          
-          {/* Tab Switcher */}
-          <div className="flex gap-2 mb-8 p-1.5 rounded-2xl bg-black/20 border border-white/5">
+        <div className="glass-panel p-6 sm:p-8 relative overflow-hidden">
+          <div className="flex gap-2 mb-7 p-1.5 rounded-2xl bg-black/20 border border-white/5">
             <button
-              onClick={() => { setMode('login'); setError(''); setSuccess('') }}
-              className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-500 flex items-center justify-center gap-2 ${
+              type="button"
+              onClick={() => switchMode('login')}
+              className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
                 mode === 'login'
-                  ? 'bg-white/[0.08] text-cyan-400 border border-white/10 shadow-[0_0_20px_rgba(0,0,0,0.2)]'
-                  : 'text-white/30 hover:text-white/50'
+                  ? 'bg-white/[0.08] text-cyan-400 border border-white/10'
+                  : 'text-white/35 hover:text-white/60'
               }`}
             >
-              <LogIn size={16} /> {t('login')}
+              <LogIn size={16} /> Kirish
             </button>
             <button
-              onClick={() => { setMode('register'); setError(''); setSuccess('') }}
-              className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-500 flex items-center justify-center gap-2 ${
+              type="button"
+              onClick={() => switchMode('register')}
+              className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
                 mode === 'register'
-                  ? 'bg-white/[0.08] text-purple-400 border border-white/10 shadow-[0_0_20px_rgba(0,0,0,0.2)]'
-                  : 'text-white/30 hover:text-white/50'
+                  ? 'bg-white/[0.08] text-purple-400 border border-white/10'
+                  : 'text-white/35 hover:text-white/60'
               }`}
             >
-              <UserPlus size={16} /> {t('register')}
+              <UserPlus size={16} /> Ro'yxatdan o'tish
             </button>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
+          {mode === 'login' && (
+            <div className="mb-5 rounded-2xl border border-cyan-400/15 bg-cyan-400/5 p-4 flex gap-3">
+              <ShieldCheck size={18} className="text-cyan-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-bold text-white">Admin kirishi</p>
+                <p className="text-xs text-white/45 mt-1">
+                  Admin ham email va parol orqali kiradi. Admin roli bazada bir marta qo'lda beriladi.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-5">
             <AnimatePresence mode="wait">
               {mode === 'register' && (
                 <motion.div
-                  initial={{ opacity: 0, y: -20 }}
+                  initial={{ opacity: 0, y: -12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
+                  exit={{ opacity: 0, y: -12 }}
                   className="space-y-5"
                 >
-                  <div className="group relative">
-                    <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-purple-400 transition-colors" />
-                    <input
-                      type="text"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder={t('fullName')}
-                      className="w-full pl-12 pr-4 py-4 rounded-2xl bg-black/20 border border-white/5 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-purple-500/40 focus:bg-black/40 transition-all"
-                    />
-                  </div>
-                  <div className="group relative">
-                    <Users size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-purple-400 transition-colors" />
-                    <input
-                      type="text"
-                      value={groupName}
-                      onChange={(e) => setGroupName(e.target.value)}
-                      placeholder={t('group')}
-                      className="w-full pl-12 pr-4 py-4 rounded-2xl bg-black/20 border border-white/5 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-purple-500/40 focus:bg-black/40 transition-all"
-                    />
-                  </div>
+                  <label className="block">
+                    <span className="text-xs font-bold text-white/45 mb-2 block">To'liq ism</span>
+                    <div className="relative">
+                      <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/25" />
+                      <input
+                        type="text"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="Ism familiya"
+                        className="w-full pl-12 pr-4 py-4 rounded-2xl bg-black/20 border border-white/5 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-purple-500/40"
+                      />
+                    </div>
+                  </label>
+
+                  <label className="block">
+                    <span className="text-xs font-bold text-white/45 mb-2 block">Guruh</span>
+                    <div className="relative">
+                      <Users size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/25" />
+                      <input
+                        type="text"
+                        value={groupName}
+                        onChange={(e) => setGroupName(e.target.value)}
+                        placeholder="Masalan: CS-101"
+                        className="w-full pl-12 pr-4 py-4 rounded-2xl bg-black/20 border border-white/5 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-purple-500/40"
+                      />
+                    </div>
+                  </label>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            <div className="group relative">
-              <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-cyan-400 transition-colors" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={t('email')}
-                required
-                className="w-full pl-12 pr-4 py-4 rounded-2xl bg-black/20 border border-white/5 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-cyan-500/40 focus:bg-black/40 transition-all"
-              />
-            </div>
+            <label className="block">
+              <span className="text-xs font-bold text-white/45 mb-2 block">Email</span>
+              <div className="relative">
+                <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/25" />
+                <input
+                  type="email"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="email@example.com"
+                  required
+                  className="w-full pl-12 pr-4 py-4 rounded-2xl bg-black/20 border border-white/5 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-cyan-500/40"
+                />
+              </div>
+            </label>
 
-            <div className="group relative">
-              <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-cyan-400 transition-colors" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder={t('password')}
-                required
-                className="w-full pl-12 pr-12 py-4 rounded-2xl bg-black/20 border border-white/5 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-cyan-500/40 focus:bg-black/40 transition-all"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 hover:text-white transition-colors"
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
+            <label className="block">
+              <span className="text-xs font-bold text-white/45 mb-2 block">Parol</span>
+              <div className="relative">
+                <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/25" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Parol"
+                  required
+                  className="w-full pl-12 pr-12 py-4 rounded-2xl bg-black/20 border border-white/5 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-cyan-500/40"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/25 hover:text-white transition-colors"
+                  aria-label={showPassword ? 'Parolni yashirish' : "Parolni ko'rsatish"}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </label>
 
-            <motion.button
+            <button
               type="submit"
               disabled={submitting}
-              whileHover={{ scale: 1.02, y: -2 }}
-              whileTap={{ scale: 0.98 }}
-              className={`w-full py-4 rounded-2xl text-sm font-bold transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-3 shadow-xl ${
+              className={`w-full py-4 rounded-2xl text-sm font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-3 shadow-xl ${
                 mode === 'login'
                   ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-cyan-900/20'
                   : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-purple-900/20'
@@ -238,46 +226,56 @@ export default function AuthPage() {
               ) : (
                 <>
                   {mode === 'login' ? <LogIn size={18} /> : <UserPlus size={18} />}
-                  {mode === 'login' ? t('loginBtn') : t('registerBtn')}
+                  {mode === 'login' ? 'Tizimga kirish' : "Ro'yxatdan o'tish"}
                 </>
               )}
-            </motion.button>
+            </button>
           </form>
 
-          {/* Messages */}
           <AnimatePresence>
             {error && (
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="mt-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium flex items-center gap-3"
+                initial={{ opacity: 0, height: 0, y: 10 }}
+                animate={{ opacity: 1, height: 'auto', y: 0 }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs font-medium flex gap-3 items-start"
               >
-                <div className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-                {error}
+                <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                   <div className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                </div>
+                <div>
+                  <p className="font-bold mb-1 text-red-200">Xatolik yuz berdi</p>
+                  <p className="opacity-80">{error === 'Email not confirmed' ? "Email tasdiqlanmagan. Iltimos, pochtangizni tekshiring yoki admin bilan bog'laning." : error}</p>
+                </div>
               </motion.div>
             )}
             {success && (
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="mt-6 p-4 rounded-2xl bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-medium flex items-center gap-3"
+                initial={{ opacity: 0, height: 0, y: 10 }}
+                animate={{ opacity: 1, height: 'auto', y: 0 }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-6 p-4 rounded-2xl bg-green-500/10 border border-green-500/20 text-green-300 text-xs font-medium flex gap-3 items-start"
               >
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-ping" />
-                {success}
+                <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                   <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                </div>
+                <div>
+                  <p className="font-bold mb-1 text-green-200">Muvaffaqiyatli!</p>
+                  <p className="opacity-80">{success}</p>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-        <p className="text-center text-white/30 text-sm mt-8">
-          {mode === 'login' ? t('noAccount') : t('hasAccount')}{' '}
+        <p className="text-center text-white/35 text-sm mt-7">
+          {mode === 'login' ? "Hisobingiz yo'qmi?" : 'Hisobingiz bormi?'}{' '}
           <button
-            onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); setSuccess('') }}
-            className="text-cyan-400 hover:text-cyan-300 font-bold transition-colors underline underline-offset-4"
+            type="button"
+            onClick={() => switchMode(mode === 'login' ? 'register' : 'login')}
+            className="text-cyan-400 hover:text-cyan-300 font-bold underline underline-offset-4"
           >
-            {mode === 'login' ? t('register') : t('login')}
+            {mode === 'login' ? "Ro'yxatdan o'tish" : 'Kirish'}
           </button>
         </p>
       </motion.div>

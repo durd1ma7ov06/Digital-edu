@@ -1,12 +1,16 @@
 import { create } from 'zustand'
-import { supabase } from '../lib/supabase'
 import type { User } from '@supabase/supabase-js'
+import { supabase } from '../lib/supabase'
+
+export type UserRole = 'admin' | 'teacher' | 'student'
 
 export interface Profile {
   id: string
+  username: string | null
   full_name: string
   avatar_emoji: string
   group_name: string
+  role: UserRole
   diagnostic_completed: boolean
   diagnostic_score: number
   diagnostic_total: number
@@ -36,28 +40,39 @@ interface AuthState {
   profile: Profile | null
   loading: boolean
   initialized: boolean
-
-  // Auth actions
   initialize: () => Promise<void>
   signUp: (email: string, password: string, fullName: string, groupName?: string) => Promise<{ error: string | null }>
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
-
-  // Profile actions
   fetchProfile: () => Promise<void>
   updateProfile: (updates: Partial<Profile>) => Promise<void>
-
-  // Diagnostic
-  completeDiagnostic: (score: number, total: number, answers?: any[]) => Promise<void>
-
-  // Quiz results
-  saveQuizResult: (topicId: number, partId: number, score: number, totalQuestions: number) => Promise<void>
-
-  // Practice results
-  savePracticeResult: (topicId: number, score: number, maxScore: number) => Promise<void>
-
-  // Leaderboard
+  completeDiagnostic: (score: number, total: number, answers?: unknown[]) => Promise<void>
+  saveQuizResult: (topicId: number, partId: number, score: number, totalQuestions: number, contentItemId?: string | null) => Promise<void>
+  savePracticeResult: (topicId: number, score: number, maxScore: number, contentItemId?: string | null) => Promise<void>
   fetchLeaderboard: () => Promise<LeaderboardEntry[]>
+}
+
+function usernameFromEmail(email: string) {
+  return email
+    .split('@')[0]
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, '_')
+    .replace(/^_+|_+$/g, '') || 'student'
+}
+
+// Profilni olib keladi va qaytaradi (state'ni o'zgartirmaydi)
+async function loadProfile(userId: string): Promise<Profile | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .maybeSingle()
+
+  if (error) {
+    console.error('[loadProfile] error:', error.message)
+    return null
+  }
+  return (data as Profile | null) || null
 }
 
 export const useAuthStore = create<AuthState>()((set, get) => ({
@@ -69,36 +84,42 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   initialize: async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        set({ user: session.user })
-        await get().fetchProfile()
-      }
-    } catch (err) {
-      console.error('Auth init error:', err)
-    } finally {
-      set({ loading: false, initialized: true })
-    }
 
-    // Auth state o'zgarishlarini tinglash
-    supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
-        set({ user: session.user })
-        await get().fetchProfile()
+        const profile = await loadProfile(session.user.id)
+        set({ user: session.user, profile })
       } else {
         set({ user: null, profile: null })
       }
-    })
+
+      // Faqat tashqi o'zgarishlarni kuzatish (signIn/signOut o'zi state'ni boshqaradi)
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_OUT') {
+          set({ user: null, profile: null })
+        } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+          set({ user: session.user })
+        }
+      })
+    } catch (err) {
+      console.error('Auth init error:', err)
+      set({ user: null, profile: null })
+    } finally {
+      set({ loading: false, initialized: true })
+    }
   },
 
   signUp: async (email, password, fullName, groupName = '') => {
     set({ loading: true })
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
+      const cleanEmail = email.trim().toLowerCase()
+      const { error } = await supabase.auth.signUp({
+        email: cleanEmail,
         password,
         options: {
           data: {
-            full_name: fullName,
+            username: usernameFromEmail(cleanEmail),
+            full_name: fullName.trim(),
+            group_name: groupName.trim(),
             avatar_emoji: '🎯',
           },
         },
@@ -109,20 +130,12 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         return { error: error.message }
       }
 
-      // Profil yaratiladi trigger orqali, lekin group_name ni yangilash kerak
-      if (data.user && groupName) {
-        await supabase
-          .from('profiles')
-          .update({ group_name: groupName })
-          .eq('id', data.user.id)
-      }
-
-      set({ user: data.user, loading: false })
-      await get().fetchProfile()
+      await supabase.auth.signOut()
+      set({ user: null, profile: null, loading: false })
       return { error: null }
-    } catch (err: any) {
+    } catch (err) {
       set({ loading: false })
-      return { error: err.message || 'Xatolik yuz berdi' }
+      return { error: err instanceof Error ? err.message : 'Xatolik yuz berdi' }
     }
   },
 
@@ -130,7 +143,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     set({ loading: true })
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim().toLowerCase(),
         password,
       })
 
@@ -139,32 +152,37 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         return { error: error.message }
       }
 
-      set({ user: data.user, loading: false })
-      await get().fetchProfile()
+      // Profilni yuklash
+      const profile = await loadProfile(data.user.id)
+
+      // State'ni to'liq o'rnatish
+      set({ user: data.user, profile, loading: false, initialized: true })
+
+      // To'g'ri sahifaga to'liq reload bilan o'tish (session localStorage'da saqlangan)
+      const target = profile?.role === 'admin' ? '/admin'
+                   : profile?.role === 'teacher' ? '/teacher'
+                   : '/'
+      window.location.assign(target)
+
       return { error: null }
-    } catch (err: any) {
+    } catch (err) {
       set({ loading: false })
-      return { error: err.message || 'Xatolik yuz berdi' }
+      return { error: err instanceof Error ? err.message : 'Xatolik yuz berdi' }
     }
   },
 
   signOut: async () => {
     await supabase.auth.signOut()
-    set({ user: null, profile: null })
+    set({ user: null, profile: null, loading: false, initialized: true })
+    window.location.assign('/auth')
   },
 
   fetchProfile: async () => {
     const { user } = get()
     if (!user) return
-
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
-
-    if (!error && data) {
-      set({ profile: data as Profile })
+    const profile = await loadProfile(user.id)
+    if (profile) {
+      set({ profile })
     }
   },
 
@@ -172,46 +190,46 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     const { user } = get()
     if (!user) return
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', user.id)
+    const { error } = await supabase.rpc('update_own_profile', {
+      p_full_name: updates.full_name ?? null,
+      p_group_name: updates.group_name ?? null,
+      p_avatar_emoji: updates.avatar_emoji ?? null,
+    })
 
-    if (!error) {
-      await get().fetchProfile()
+    if (error) {
+      console.error('Profile update error:', error)
+      return
     }
+
+    await get().fetchProfile()
   },
 
   completeDiagnostic: async (score, total, answers = []) => {
-    try {
-      const { error } = await supabase.rpc('complete_diagnostic', {
-        p_score: score,
-        p_total: total,
-        p_answers: answers,
-      })
+    const { error } = await supabase.rpc('complete_diagnostic', {
+      p_score: score,
+      p_total: total,
+      p_answers: answers,
+    })
 
-      if (error) {
-        console.error('Diagnostic save error:', error)
-        return
-      }
-
-      // Profilni yangilash
-      await get().fetchProfile()
-    } catch (err) {
-      console.error('Diagnostic error:', err)
+    if (error) {
+      console.error('Diagnostic save error:', error)
+      return
     }
+
+    await get().fetchProfile()
   },
 
-  saveQuizResult: async (topicId, partId, score, totalQuestions) => {
+  saveQuizResult: async (topicId, partId, score, totalQuestions, contentItemId = null) => {
     const { user } = get()
     if (!user) return
 
-    const percentage = Math.round((score / totalQuestions) * 100)
+    const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0
     const xpEarned = score * 10
 
     const { error } = await supabase.from('quiz_results').insert({
       user_id: user.id,
       topic_id: topicId,
+      content_item_id: contentItemId,
       part_id: partId,
       score,
       total_questions: totalQuestions,
@@ -219,28 +237,25 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       xp_earned: xpEarned,
     })
 
-    if (error) {
-      console.error('Quiz result save error:', error)
-    }
+    if (error) console.error('Quiz result save error:', error)
   },
 
-  savePracticeResult: async (topicId, score, maxScore) => {
+  savePracticeResult: async (topicId, score, maxScore, contentItemId = null) => {
     const { user } = get()
     if (!user) return
 
-    const xpEarned = Math.round((score / maxScore) * 50)
+    const xpEarned = maxScore > 0 ? Math.round((score / maxScore) * 50) : 0
 
     const { error } = await supabase.from('practice_results').insert({
       user_id: user.id,
       topic_id: topicId,
+      content_item_id: contentItemId,
       score,
       max_score: maxScore,
       xp_earned: xpEarned,
     })
 
-    if (error) {
-      console.error('Practice result save error:', error)
-    }
+    if (error) console.error('Practice result save error:', error)
   },
 
   fetchLeaderboard: async () => {

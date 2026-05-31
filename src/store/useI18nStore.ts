@@ -86,7 +86,7 @@ export const useI18nStore = create<I18nState>()(
       t: (key) => translations[get().language][key] || translations['uz'][key]
     }),
     {
-      name: 'learnify-lang-store',
+      name: 'digitaledu-lang-store',
     }
   )
 )

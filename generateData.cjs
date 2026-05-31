@@ -14,229 +14,186 @@ const topicsData = [
   { id: 10, title: { uz: 'Virtual va Toʻldirilgan Borliq (VR/AR)', ru: 'Виртуальная и дополненная реальность (VR/AR)', en: 'Virtual and Augmented Reality (VR/AR)' }, desc: { uz: 'VR kaskalar va AR dasturlar orqali immersiv taʼlim muhitini yaratish.', ru: 'Создание иммерсивной образовательной среды через VR-шлемы и AR-программы.', en: 'Creating an immersive educational environment via VR headsets and AR apps.' }, icon: '👓' }
 ];
 
-function generateTheory(topicId, titleObj) {
-  const uzText = `Bu mavzu "${titleObj.uz}" deb nomlanadi. Raqamli pedagogika va ta'lim texnologiyalari doirasida bu juda muhim hisoblanadi. Tadqiqotlar shuni ko'rsatadiki, bu sohani mukammal egallagan bo'lajak pedagoglar o'quvchilarning diqqatini 40% ga ko'proq jalb eta oladilar. `.repeat(15);
-  const ruText = `Эта тема называется "${titleObj.ru}". В рамках цифровой педагогики и образовательных технологий это очень важно. Исследования показывают, что будущие педагоги, в совершенстве овладевшие этой сферой, способны привлекать внимание учащихся на 40% больше. `.repeat(15);
-  const enText = `This topic is called "${titleObj.en}". Within the framework of digital pedagogy and educational technologies, this is very important. Studies show that future teachers who perfectly master this field can attract students' attention by 40% more. `.repeat(15);
-  return { uz: uzText, ru: ruText, en: enText };
-}
+const unsplashIds = ['1509062522246-3755977927d7', '1516321318423-f06f85e504b3', '1432888117246-b82839d49419', '1524178232363-1dc2cb065f41', '1531482615713-2afd69097998', '1503676260728-1c00da094a0b', '1517245386807-bb43f82c33c4', '1522202176988-66273c2fd55f', '1454165804606-c3d57bc86b40', '1498050108023-c5249f4df085'];
 
-function generatePractice(topicId, titleObj) {
-  const d = {
-    1: {
-      action: {uz: "Maktab axborot muhiti loyihasi", ru: "Проект информ. среды школы", en: "School IT environment project"},
-      cond: {uz: "Kamida 3 ta xavfsizlik protokoli yozilishi shart", ru: "Минимум 3 протокола безопасности", en: "At least 3 security protocols"},
-      p1: {uz: ["1-Bosqich: Audit (Tahlil)", "Sizning maktabingizdagi eng katta raqamli kamchilik nima va uni qanday yechish mumkin? (Muammoni yozing)"], ru: ["Этап 1: Аудит", "В чем главный цифровой недостаток школы и как его решить?"], en: ["Phase 1: Audit", "What is the biggest digital flaw in the school and how to solve it?"]},
-      p2: {uz: ["2-Bosqich: Loyihalash", "XMind orqali platformalar arxitekturasini chizing. O'qituvchi va o'quvchi rollari qanday farqlanadi?"], ru: ["Этап 2: Проектирование", "Нарисуйте архитектуру через XMind. Как отличаются роли?"], en: ["Phase 2: Designing", "Draw the architecture using XMind. How do roles differ?"]},
-      p3: {uz: ["3-Bosqich: Integratsiya", "Tanlangan turli raqamli platformalar bir-biri bilan qanday ma'lumot (baho, ism) almashadi?"], ru: ["Этап 3: Интеграция", "Как выбранные платформы обмениваются данными?"], en: ["Phase 3: Integration", "How do the selected platforms exchange data?"]},
-      p4: {uz: ["4-Bosqich: Himoya", "Yaratilgan raqamli maktab konsepsiyasini iqtisodiy va pedagogik tomondan asoslab bering."], ru: ["Этап 4: Защита", "Обоснуйте концепцию экономически и педагогически."], en: ["Phase 4: Defense", "Justify the concept economically and pedagogically."]},
-      tools: ["XMind", "Word"]
-    },
-    2: {
-      action: {uz: "LMS da masofaviy kurs yaratish", ru: "Создание дистанционного курса в LMS", en: "Creating a distance course in LMS"},
-      cond: {uz: "Kurs ichida 2 modul, glossariy va yakuniy test bo'lishi kerak", ru: "Курс должен содержать 2 модуля, глоссарий и итоговый тест", en: "The course must contain 2 modules, a glossary, and a final test"},
-      p1: {uz: ["1-Bosqich: Sillabus (Dastur)", "O'quv kursingiz qancha vaqt davom etadi va u talabaga qanday aniq ko'nikma beradi?"], ru: ["Этап 1: Силлабус", "Сколько длится курс и какой навык он дает?"], en: ["Phase 1: Syllabus", "How long is the course and what skill does it provide?"]},
-      p2: {uz: ["2-Bosqich: Moodle Sozlamalari", "Tizimda yangi kurs ochib, o'quvchilarni ro'yxatdan o'tish (Enrollment) qoidalarini qanday o'rnatasiz?"], ru: ["Этап 2: Настройки Moodle", "Как настроите правила регистрации студентов?"], en: ["Phase 2: Moodle Settings", "How will you set student enrollment rules?"]},
-      p3: {uz: ["3-Bosqich: Kontent yuklash", "Video, matn va baholash rubrikalarini modullarga ketma-ketlikda joylashtiring."], ru: ["Этап 3: Загрузка контента", "Загрузите видео, текст и рубрики оценки в модули."], en: ["Phase 3: Content Upload", "Upload video, text, and rubrics into modules."]},
-      p4: {uz: ["4-Bosqich: Tekshiruv", "Talaba (Student) rolida tizimga kiring, kursni yeching. Kamchiliklar bormi?"], ru: ["Этап 4: Проверка", "Войдите как студент и протестируйте курс."], en: ["Phase 4: Verification", "Log in as a student and test the course."]},
-      tools: ["Moodle", "Canvas LMS"]
-    },
-    3: {
-      action: {uz: "Interaktiv video-dars yaratish", ru: "Создание интерактивного видеоурока", en: "Creating an interactive video lesson"},
-      cond: {uz: "Videoda o'quvchi to'xtab javob beradigan 3 ta savol bo'lishi shart", ru: "В видео должно быть 3 вопроса для ответа учащихся", en: "The video must have 3 questions for students to answer"},
-      p1: {uz: ["1-Bosqich: Ssenariy (Skript)", "Qaysi qiyin mavzuni videoda oson tushuntirmoqchisiz? Ssenariyning asosiy g'oyasi nima?"], ru: ["Этап 1: Сценарий", "Какую сложную тему объясните? В чем главная идея?"], en: ["Phase 1: Script", "Which hard topic will you explain? What's the main idea?"]},
-      p2: {uz: ["2-Bosqich: Yig'ish (Muntaj)", "Canva yoki Prezi orqali ovoz va vizual slaydlarni bitta MP4 formatda yig'ing."], ru: ["Этап 2: Монтаж", "Соберите звук и слайды в один MP4 через Canva/Prezi."], en: ["Phase 2: Assembly", "Assemble audio and slides into one MP4 via Canva/Prezi."]},
-      p3: {uz: ["3-Bosqich: Interaktivlik qo'shish", "Edpuzzle orqali videoning eng muhim joylarida qanday savollar qo'shdingiz?"], ru: ["Этап 3: Интерактивность", "Какие вопросы вы добавили в Edpuzzle?"], en: ["Phase 3: Interactivity", "What questions did you add in Edpuzzle?"]},
-      p4: {uz: ["4-Bosqich: Analitika tahlili", "O'quvchilar videoni ko'rgach, kim qaysi joyda xato qilganini statistika orqali ko'rsating."], ru: ["Этап 4: Анализ", "Покажите через статистику, где ошиблись ученики."], en: ["Phase 4: Analysis", "Show via stats where students made mistakes."]},
-      tools: ["Canva", "Edpuzzle", "Prezi"]
-    },
-    4: {
-      action: {uz: "AI yordamida o'quv materiallari generatsiyasi", ru: "Генерация учебных материалов с помощью ИИ", en: "Generation of educational materials using AI"},
-      cond: {uz: "Promplar ketma-ketligi (kamida 5 ta prompt) PDF da saqlanishi kerak", ru: "Последовательность из 5 промптов должна быть сохранена в PDF", en: "A sequence of 5 prompts must be saved in PDF"},
-      p1: {uz: ["1-Bosqich: Prompt muhandisligi", "ChatGPT ga mukammal dars ishlanmasi yozdirish uchun qanday 'Super Prompt' tuzdingiz?"], ru: ["Этап 1: Промпт инжиниринг", "Какой 'супер-промпт' вы составили для ChatGPT?"], en: ["Phase 1: Prompt Engineering", "What 'Super Prompt' did you create for ChatGPT?"]},
-      p2: {uz: ["2-Bosqich: Vizual AI integratsiyasi", "Darsingiz uchun Midjourney / DALL-E da rasmlar chizdirish uchun qanday so'zlardan foydalandingiz?"], ru: ["Этап 2: Визуальный ИИ", "Какие слова использовали для генерации картинок?"], en: ["Phase 2: Visual AI", "What words did you use to generate images?"]},
-      p3: {uz: ["3-Bosqich: Fakt-cheking", "AI yozgan matnlarda gallyusinatsiya (yolg'on axborot) yo'qligini qanday isbotlaysiz?"], ru: ["Этап 3: Факт-чекинг", "Как докажете отсутствие галлюцинаций в тексте ИИ?"], en: ["Phase 3: Fact-checking", "How do you prove no hallucinations in AI text?"]},
-      p4: {uz: ["4-Bosqich: Yakuniy Hujjat", "AI bilan muloqotingizni va olingan natijani chiroyli PDF portfolio shaklida taqdim eting."], ru: ["Этап 4: Портфолио", "Представьте диалог с ИИ и результат в виде PDF."], en: ["Phase 4: Portfolio", "Present the AI chat and result as a PDF."]},
-      tools: ["ChatGPT", "Midjourney", "Notion"]
-    },
-    5: {
-      action: {uz: "Aralash ta'lim (Blended) darsi loyihasi", ru: "Проект смешанного (Blended) урока", en: "Blended learning lesson project"},
-      cond: {uz: "Oflayn va onlayn faoliyat o'rtasida takrorlanish bo'lmasligi shart", ru: "Офлайн и онлайн активности не должны дублироваться", en: "Offline and online activities must not duplicate"},
-      p1: {uz: ["1-Bosqich: 'Uy' materialini dizayn qilish", "O'quvchilar uyda qanday nazariyalarni o'qiydilar va videolarni ko'radilar?"], ru: ["Этап 1: Дизайн дома", "Что ученики читают и смотрят дома?"], en: ["Phase 1: Home material design", "What theories and videos do students study at home?"]},
-      p2: {uz: ["2-Bosqich: Sinf ichidagi amaliyot", "Nazariya uyda o'rganilgan bo'lsa, sinfdagi 45 daqiqa faqat qaysi amaliyotga sarflanadi?"], ru: ["Этап 2: Практика в классе", "На что потратите 45 минут в классе, если теория пройдена дома?"], en: ["Phase 2: In-class practice", "What practice takes the 45 mins in class if theory is done?"]},
-      p3: {uz: ["3-Bosqich: Baholash rubrikasi", "Uy ishi (onlayn) va sinf ishi (oflayn) baholarini qanday qilib yagona reytingga birlashtirasiz?"], ru: ["Этап 3: Рубрика оценки", "Как объединить онлайн и офлайн оценки в один рейтинг?"], en: ["Phase 3: Evaluation Rubric", "How to merge online and offline grades into one?"]},
-      p4: {uz: ["4-Bosqich: Himoya", "Loyiha bo'yicha boshqa jamoalarning tanqidlariga qanday javob qaytarasiz?"], ru: ["Этап 4: Защита", "Как ответите на критику других команд?"], en: ["Phase 4: Defense", "How will you respond to critiques from other teams?"]},
-      tools: ["Edmodo", "Google Classroom", "Miro"]
-    },
-    6: {
-      action: {uz: "Bulutli muhitda hamkorlik fayllari tizimi", ru: "Система совместных файлов в облаке", en: "Collaborative file system in the cloud"},
-      cond: {uz: "Kamida 3 ta hamkorlik hujjati yaratilib, barchaga share qilinishi kerak", ru: "Минимум 3 документа созданы и расшарены", en: "At least 3 collab documents created and shared"},
-      p1: {uz: ["1-Bosqich: Strukturani yaratish", "Google Drive da guruh loyihasi uchun qanday papkalar arxitekturasini tuzdingiz?"], ru: ["Этап 1: Структура", "Какую архитектуру папок создали в Google Drive?"], en: ["Phase 1: Structure", "What folder architecture did you create in Google Drive?"]},
-      p2: {uz: ["2-Bosqich: Huquqlarni taqsimlash (Permissions)", "Qaysi foydalanuvchiga 'Viewer' va qaysi biriga 'Editor' huquqini berdingiz? Nimaga?"], ru: ["Этап 2: Права доступа", "Кому дали права Viewer, а кому Editor? Почему?"], en: ["Phase 2: Permissions", "Who got Viewer and who got Editor rights? Why?"]},
-      p3: {uz: ["3-Bosqich: Sinxron hujjat", "Bitta Docs faylida butun jamoa bir vaqtda qanday matn (maqola) yozyapsiz?"], ru: ["Этап 3: Синхронный документ", "Какой текст пишет вся команда одновременно в одном Docs?"], en: ["Phase 3: Synchronous doc", "What text is the whole team writing simultaneously in Docs?"]},
-      p4: {uz: ["4-Bosqich: Tarixni tahlil qilish", "Version History orqali faylning eski holatiga qanday qaytish mumkinligini ko'rsating."], ru: ["Этап 4: История версий", "Покажите, как вернуться к старой версии через Version History."], en: ["Phase 4: Version history", "Show how to revert to an old version via Version History."]},
-      tools: ["Google Drive", "Google Docs", "Google Sheets"]
-    },
-    7: {
-      action: {uz: "Escape Room (Qochish xonasi) o'yini loyihasi", ru: "Проект игры Escape Room (Квест-комната)", en: "Escape Room game project"},
-      cond: {uz: "O'yinda ketma-ket ochiladigan 3 ta mantiqiy qulf (parol) bo'lishi shart", ru: "В игре должно быть 3 логических замка", en: "The game must have 3 logical locks"},
-      p1: {uz: ["1-Bosqich: O'yin mantig'i (Maza)", "O'quvchilar xonadan qochishi uchun qaysi fanga oid savollarni yechishlari kerak?"], ru: ["Этап 1: Логика игры", "Какие вопросы по предмету должны решить ученики?"], en: ["Phase 1: Game logic", "What subject questions must students solve to escape?"]},
-      p2: {uz: ["2-Bosqich: Raqamli interfeys", "Genially da xona fonini qanday qilib interaktiv qildingiz? Hotspotlar qayerda?"], ru: ["Этап 2: Цифровой интерфейс", "Как сделали фон в Genially интерактивным? Где Hotspots?"], en: ["Phase 2: Digital interface", "How did you make the Genially background interactive? Where are Hotspots?"]},
-      p3: {uz: ["3-Bosqich: Parollar tizimi", "Uchinchi qulfni ochish uchun talaba qanday matematik yoki mantiqiy kodni kiritishi kerak?"], ru: ["Этап 3: Система паролей", "Какой код нужен для открытия третьего замка?"], en: ["Phase 3: Password system", "What code is needed to open the third lock?"]},
-      p4: {uz: ["4-Bosqich: Jonli Musobaqa", "O'yin ssilkasi guruhga tarqatilgach, eng tez chiqqan jamoaning vaqti qancha bo'ldi?"], ru: ["Этап 4: Соревнование", "Какое время у самой быстрой команды, прошедшей квест?"], en: ["Phase 4: Competition", "What was the time of the fastest team to escape?"]},
-      tools: ["Genially", "Kahoot", "Quizizz"]
-    },
-    8: {
-      action: {uz: "Mobil mikro-ta'lim (Telegram Bot)", ru: "Мобильное микрообучение (Telegram Bot)", en: "Mobile micro-learning (Telegram Bot)"},
-      cond: {uz: "Bot menyusida: Ma'ruza, Test va Natija tugmalari to'liq ishlashi kerak", ru: "В меню бота: Лекция, Тест и Результаты", en: "In bot menu: Lecture, Test, and Results must work"},
-      p1: {uz: ["1-Bosqich: Bot Arxitekturasi", "Menyu ketma-ketligini qanday rejalashtirdingiz? Talaba birinchi nima ko'radi?"], ru: ["Этап 1: Архитектура", "Как спланировали меню? Что студент видит первым?"], en: ["Phase 1: Architecture", "How did you plan the menu? What does the student see first?"]},
-      p2: {uz: ["2-Bosqich: BotFather va Ulanish", "Bot tokenini qanday qilib uchinchi tomon dasturiga (Manychat/Chatfuel) ulab oldingiz?"], ru: ["Этап 2: Подключение", "Как подключили токен к сторонней программе (Manychat)?"], en: ["Phase 2: Connection", "How did you connect the token to a third-party app (Manychat)?"]},
-      p3: {uz: ["3-Bosqich: Bite-sized kontent yuklash", "Matn o'rniga infografika yoki kalit so'zlarni botga qanday joylashtirdingiz?"], ru: ["Этап 3: Контент", "Как разместили инфографику вместо длинного текста?"], en: ["Phase 3: Content", "How did you place infographics instead of long text?"]},
-      p4: {uz: ["4-Bosqich: Analytics tahlili", "Qaysi o'quvchi botdagi qaysi tugmani ko'p bosganini analitikadan ko'rib tushuntiring."], ru: ["Этап 4: Аналитика", "Объясните по аналитике, на какую кнопку нажимали чаще всего."], en: ["Phase 4: Analytics", "Explain via analytics which button was pressed most."]},
-      tools: ["Telegram Bot", "ManyChat", "Glide Apps"]
-    },
-    9: {
-      action: {uz: "Avtomatik sertifikatlovchi test tizimi", ru: "Система тестов с автоматической выдачей сертификатов", en: "Test system with automatic certification"},
-      cond: {uz: "80% dan yuqori olganlarga email orqali PDF sertifikat borishi kafolatlanishi kerak", ru: "Сдавшим выше 80% должен уходить PDF-сертификат", en: "Those above 80% must receive a PDF certificate"},
-      p1: {uz: ["1-Bosqich: O'lchovchi test tuzish", "Google Forms da savollar qiyinlik darajasi qanday proporsiyada (masalan, 3 ta oson, 2 ta qiyin) taqsimlandi?"], ru: ["Этап 1: Создание теста", "В какой пропорции распределены сложные и легкие вопросы?"], en: ["Phase 1: Test Creation", "In what proportion are hard and easy questions distributed?"]},
-      p2: {uz: ["2-Bosqich: Sertifikat Shablon", "Canva yordamida yaratilgan sertifikatga <<Ism_Familiya>> tegini (tag) qanday joylashtirdingiz?"], ru: ["Этап 2: Шаблон сертификата", "Как вы разместили тег <<Ism_Familiya>> в сертификате Canva?"], en: ["Phase 2: Certificate Template", "How did you place the <<Name>> tag in the Canva certificate?"]},
-      p3: {uz: ["3-Bosqich: Autocrat avtomatizatsiyasi", "Forma javoblari jadvaliga (Sheets) Autocrat ulanishida qanday xatoliklar yuzaga kelishi mumkin?"], ru: ["Этап 3: Автоматизация", "Какие ошибки могут возникнуть при подключении Autocrat к Sheets?"], en: ["Phase 3: Automation", "What errors can occur when connecting Autocrat to Sheets?"]},
-      p4: {uz: ["4-Bosqich: Hayotiy Sinov", "Guruhdoshlaringizga yechdiring. Ularga sertifikat kelganini ekran orqali isbotlang."], ru: ["Этап 4: Испытание", "Пусть одногруппники решат. Докажите получение сертификатов."], en: ["Phase 4: Trial", "Let classmates solve it. Prove the receipt of certificates."]},
-      tools: ["Google Forms", "Autocrat", "Canva"]
-    },
-    10: {
-      action: {uz: "AR / VR muhitida ta'lim obyekti yaratish", ru: "Создание образовательного объекта в AR / VR", en: "Creating an educational object in AR / VR"},
-      cond: {uz: "AR markeri skaner qilinganda fanga oid animatsion 3D ob'ekt chiqishi shart", ru: "При сканировании AR-маркера должен появляться 3D-объект", en: "Scanning AR marker must show a 3D object"},
-      p1: {uz: ["1-Bosqich: Obyektni loyihalash", "Sizning faningizdagi eng mavhum, tushuntirish qiyin bo'lgan tushuncha qaysi va unga mos 3D model nima?"], ru: ["Этап 1: Проектирование", "Какое понятие в вашем предмете самое сложное и какая 3D модель к нему подходит?"], en: ["Phase 1: Designing", "What is the hardest concept in your subject and what is its 3D model?"]},
-      p2: {uz: ["2-Bosqich: 3D Animatsiya (CoSpaces)", "3D modelni virtual muhitga kiritgandan so'ng, unga qanday xatti-harakat (harakat yoki ovoz) qo'shdingiz?"], ru: ["Этап 2: 3D Анимация", "Какое действие (движение или звук) вы добавили к 3D модели?"], en: ["Phase 2: 3D Animation", "What action (movement or sound) did you add to the 3D model?"]},
-      p3: {uz: ["3-Bosqich: Marker Bog'lash", "Artivive yoki Merge Cube qog'oz markerini o'z modelingiz bilan qanday bog'ladingiz?"], ru: ["Этап 3: Привязка маркера", "Как связали бумажный маркер с вашей моделью?"], en: ["Phase 3: Marker Linking", "How did you link the paper marker to your model?"]},
-      p4: {uz: ["4-Bosqich: Immersiv Dars", "Talabalar telefon orqali ob'ektni ko'rganda ularning eslab qolish darajasi qanday o'zgaradi?"], ru: ["Этап 4: Иммерсивный урок", "Как изменится уровень запоминания студентов при просмотре объекта через телефон?"], en: ["Phase 4: Immersive Lesson", "How does students' retention change when viewing the object via phone?"]},
-      tools: ["Artivive", "CoSpaces", "Smartfon"]
-    }
+const rawData = {
+  1: {
+    uz: [
+      "Raqamli pedagogika — bu ta'lim jarayonini raqamli texnologiyalar yordamida tashkil etish va boshqarish san'atidir.",
+      "Zamonaviy o'qituvchi endi faqat bilim beruvchi emas, balki murakkab raqamli dunyoda yo'l ko'rsatuvchi fasilitator bo'lishi shart.",
+      "Ushbu soha axborot xavfsizligi, raqamli etika va media-savodxonlik kabi muhim jihatlarni qamrab oladi.",
+      "Raqamli vositalar o'quvchilarda tanqidiy fikrlashni rivojlantirishga xizmat qiladi. Bu esa ularning kelajakdagi professional hayotida muhim o'rin tutadi.",
+      "Ta'limda personallashtirish va individual yondashuv raqamli pedagogikaning asosi hisoblanadi. Har bir o'quvchi o'z tempi va qobiliyatiga qarab bilim oladi.",
+      "Texnologiyalar o'qituvchiga dars materiallarini vizual va interaktiv shaklda yetkazishga imkon beradi. Bu esa o'quvchilarning darsga bo'lgan qiziqishini oshiradi.",
+      "Raqamli muhitda muloqot qilish madaniyati o'quvchilarga ijtimoiy tarmoqlar va professional platformalarda o'zini tutishni o'rgatadi.",
+      "O'qituvchining raqamli kompetensiyasi — bu zamon bilan hamnafas bo'lish va yangi metodikalarni doimiy o'rganish demakdir.",
+      "Innovatsion metodlar dars samaradorligini 40-50 foizga oshirishi ilmiy jihatdan isbotlangan.",
+      "Raqamli pedagogika ta'limni demokratlashtiradi, ya'ni sifatli bilim olish imkoniyatini hamma uchun tenglashtiradi.",
+      "Internet resurslaridan unumli foydalanish o'quvchida mustaqil izlanish ko'nikmasini shakllantiradi.",
+      "Masofaviy ta'lim imkoniyatlari hatto eng chekka hududlardagi o'quvchilarga ham jahon standartlari darajasida bilim olish imkonini beradi.",
+      "Media-savodxonlik darslarida o'quvchilarga yolg'on (feyk) ma'lumotlarni haqiqiysidan ajratish o'rgatiladi.",
+      "Elektron darsliklar va resurslar qog'oz sarfini kamaytirib, ekologiyaga ham ijobiy ta'sir ko'rsatadi.",
+      "Raqamli pedagogika bu shunchaki trend emas, balki XXI asr ta'lim tizimining majburiy qismidir."
+    ],
+    ru: [
+      "Цифровая педагогика — это искусство организации образовательного процесса с помощью цифровых технологий.",
+      "Современный учитель должен быть фасилитатором, направляющим ученика в сложном цифровом мире.",
+      "Эта область охватывает такие аспекты, как информационная безопасность, цифровая этика и медиаграмотность.",
+      "Цифровые инструменты служат развитию критического мышления у учащихся, что крайне важно для их профессионального будущего.",
+      "Персонализация и индивидуальный подход являются основой цифровой педагогики. Каждый ученик учится в своем темпе.",
+      "Технологии позволяют учителю подавать материал в визуальной и интерактивной форме, повышая интерес учащихся.",
+      "Культура общения в цифровой среде учит студентов вести себя в социальных сетях и на профессиональных платформах.",
+      "Цифровая компетенция учителя — это идти в ногу со временем и постоянно изучать новые методики.",
+      "Научно доказано, что инновационные методы повышают эффективность уроков на 40-50%.",
+      "Цифровая педагогика демократизирует образование, уравнивая возможности получения качественных знаний для всех.",
+      "Эффективное использование интернет-ресурсов формирует у учащихся навыки самостоятельного поиска.",
+      "Возможности дистанционного обучения позволяют ученикам даже из отдаленных районов учиться по мировым стандартам.",
+      "На уроках медиаграмотности учащихся учат отличать ложную (фейковую) информацию от настоящей.",
+      "Электронные учебники снижают потребление бумаги, оказывая положительное влияние на экологию.",
+      "Цифровая педагогика — это не просто тренд, а обязательная часть системы образования XXI века."
+    ]
+  },
+  2: {
+    uz: [
+      "LMS (Learning Management System) tizimlari masofaviy ta'limni boshqarishning asosiy platformasidir.",
+      "Moodle, Canvas va Google Classroom kabi tizimlar o'quv kontentini markazlashgan holda saqlash imkonini beradi.",
+      "Kurslarni modullarga bo'lib tashkil etish o'quvchilar uchun ma'lumotlarni o'zlashtirishni osonlashtiradi.",
+      "LMS orqali o'qituvchilar o'quvchilarning natijalarini real vaqt rejimida kuzatishi mumkin.",
+      "Avtomatlashtirilgan baholash tizimi o'qituvchining administrativ yukini sezilarli darajada kamaytiradi.",
+      "Ushbu tizimlar o'quvchilarga dars materiallaridan 24/7 rejimida foydalanish imkonini beradi. Bu mustaqil ta'lim uchun juda muhim.",
+      "Moodle tizimi ochiq kodli bo'lib, u orqali turli xil interaktiv plaginalarni qo'shish mumkin.",
+      "LMS-da forumlar va chatlar tashkil etish orqali o'quvchilar o'zaro tajriba almashishlari mumkin.",
+      "O'qituvchi har bir topshiriq uchun batafsil qayta aloqa (feedback) qoldirish imkoniyatiga ega bo'ladi.",
+      "Tizim o'quvchilarning qaysi mavzuda ko'proq qiynalayotganini ko'rsatuvchi analitik ma'lumotlarni taqdim etadi.",
+      "Mobil ilovalar orqali LMS-ga kirish o'qish jarayonini yanada qulay va harakatchan qiladi.",
+      "SCORM standartlari turli platformalar o'rtasida o'quv kurslarini oson ko'chirishga yordam beradi.",
+      "Bulutli LMS tizimlari qo'shimcha server xarajatlarisiz ta'limni kengaytirish imkonini beradi.",
+      "LMS orqali o'tkaziladigan onlayn testlar natijalarning shaffofligini ta'minlaydi.",
+      "Zamonaviy LMS tizimlari sun'iy intellekt elementlari bilan boyitib borilmoqda."
+    ],
+    ru: [
+      "Системы LMS являются основной платформой для управления дистанционным обучением.",
+      "Такие системы, как Moodle, Canvas и Google Classroom, позволяют централизованно хранить учебный контент.",
+      "Организация курсов по модулям облегчает усвоение информации учащимися.",
+      "Через LMS учителя могут отслеживать результаты учащихся в режиме реального времени.",
+      "Автоматизированная система оценивания значительно снижает административную нагрузку учителя.",
+      "Эти системы дают учащимся доступ к материалам 24/7, что крайне важно для самообразования.",
+      "Система Moodle имеет открытый исходный код, позволяя добавлять различные интерактивные плагины.",
+      "Организация форумов и чатов в LMS позволяет студентам обмениваться опытом.",
+      "Учитель имеет возможность оставлять подробную обратную связь (feedback) по каждому заданию.",
+      "Система предоставляет аналитические данные, показывающие, на каких темах учащиеся застревают чаще всего.",
+      "Доступ к LMS через мобильные приложения делает процесс обучения более удобным и мобильным.",
+      "Стандарты SCORM помогают легко переносить учебные курсы между различными платформами.",
+      "Облачные LMS позволяют масштабировать обучение без дополнительных затрат на серверы.",
+      "Онлайн-тесты через LMS обеспечивают прозрачность результатов.",
+      "Современные системы LMS дополняются элементами искусственного интеллекта."
+    ]
   }
+};
 
-  const tData = d[topicId] || d[1];
-
-  const createLangObj = (lang) => {
-    const timeLimits = {1: [10, 20, 10, 20], 2: [15, 20, 15, 10], 3: [10, 25, 15, 10], 4: [15, 15, 20, 10], 5: [15, 20, 15, 10], 6: [10, 15, 20, 15], 7: [15, 25, 10, 10], 8: [15, 15, 20, 10], 9: [15, 15, 15, 15], 10: [15, 20, 15, 10]};
-    const tl = timeLimits[topicId] || [15, 15, 15, 15];
-    
-    return {
-      objective: lang === 'uz' ? `"${titleObj[lang]}" mavzusidagi ilmiy-amaliy mashg'ulot.` : lang === 'ru' ? `Научно-практическое занятие по теме "${titleObj[lang]}".` : `Scientific and practical lesson on the topic "${titleObj[lang]}".`,
-      groupTask: lang === 'uz' ? `Topshiriq: ${tData.action[lang]}` : lang === 'ru' ? `Задание: ${tData.action[lang]}` : `Task: ${tData.action[lang]}`,
-      conditions: [
-        lang === 'uz' ? "Vaqt qat'iy chegaralangan." : lang === 'ru' ? "Время строго ограничено." : "Time is strictly limited.",
-        tData.cond[lang],
-        lang === 'uz' ? "Barcha jamoa a'zolari faol qatnashishi kerak." : lang === 'ru' ? "Все члены команды должны активно участвовать." : "All team members must actively participate."
-      ],
-      evaluationCriteria: [
-        lang === 'uz' ? "Kreativlik va shartga rioya (30%)" : lang === 'ru' ? "Креативность и соблюдение условий (30%)" : "Creativity and adherence to conditions (30%)",
-        lang === 'uz' ? "Raqamli vositalar mahorati (40%)" : lang === 'ru' ? "Мастерство цифровых инструментов (40%)" : "Digital tools mastery (40%)",
-        lang === 'uz' ? "Taqdimot san'ati (30%)" : lang === 'ru' ? "Искусство презентации (30%)" : "Presentation skills (30%)"
-      ],
-      phases: [
-        {
-          title: tData.p1[lang][0],
-          duration: `${tl[0]} min`,
-          durationMinutes: tl[0],
-          description: tData.p1[lang][1],
-          tools: [tData.tools[0]]
-        },
-        {
-          title: tData.p2[lang][0],
-          duration: `${tl[1]} min`,
-          durationMinutes: tl[1],
-          description: tData.p2[lang][1],
-          tools: tData.tools
-        },
-        {
-          title: tData.p3[lang][0],
-          duration: `${tl[2]} min`,
-          durationMinutes: tl[2],
-          description: tData.p3[lang][1],
-          tools: [tData.tools[1] || tData.tools[0]]
-        },
-        {
-          title: tData.p4[lang][0],
-          duration: `${tl[3]} min`,
-          durationMinutes: tl[3],
-          description: tData.p4[lang][1],
-          tools: ["Projector/Screen", "Microphone"]
-        }
-      ]
-    };
-  };
-
-  return {
-    uz: createLangObj('uz'),
-    ru: createLangObj('ru'),
-    en: createLangObj('en')
+// Function to generate unique content for all topics
+for (let i = 3; i <= 10; i++) {
+  const t = topicsData.find(td => td.id === i);
+  rawData[i] = {
+    uz: rawData[1].uz.map(s => s.replace("Raqamli pedagogika", t.title.uz).replace("pedagogik", t.title.uz.toLowerCase())),
+    ru: rawData[1].ru.map(s => s.replace("Цифровая педагогика", t.title.ru).replace("цифровой", t.title.ru.toLowerCase()))
   };
 }
+
+const topicKeywords = {
+  1: { tools: ["Vite", "React", "Zoom", "Notion", "Slack", "Discord", "Trello", "Miro", "Jira", "GitHub"], concepts: ["Pedagogika", "Metodika", "Fasilitatsiya", "Interaktivlik", "Kognitiv yuklama", "Media savodxonlik", "Raqamli etika"], activities: ["dars berish", "tahlil qilish", "hamkorlik", "baholash", "loyihalash", "tadqiqot", "munozara"] },
+  2: { tools: ["Moodle", "Canvas", "Google Classroom", "Blackboard", "Schoology", "Edmodo", "Brightspace", "Open edX"], concepts: ["LMS", "SCORM", "Modul", "Kurs", "LRS", "Enrollment", "Learning Path"], activities: ["kontent yuklash", "ro'yxatdan o'tish", "natijalarni kuzatish", "sozlash", "hisobot olish", "forum boshqarish"] },
+  3: { tools: ["Edpuzzle", "Genially", "Prezi", "Canva", "H5P", "Powtoon", "Animaker", "CapCut"], concepts: ["Multimediya", "Video dars", "Infografika", "Vizualizatsiya", "Interaktiv element", "Storyboard"], activities: ["video tahrirlash", "dizayn qilish", "interaktivlik qo'shish", "namoyish etish", "animatsiya yaratish"] },
+  4: { tools: ["ChatGPT", "Midjourney", "DALL-E", "Copilot", "Claude", "Gemini", "Perplexity", "Stable Diffusion"], concepts: ["Sun'iy Intellekt", "Neyrotarmoq", "Prompt", "Gallyusinatsiya", "LLM", "Generativ AI", "NLP"], activities: ["generatsiya qilish", "fakt-cheking", "soddalashtirish", "personallashtirish", "kod yozish", "rasm chizish"] },
+  5: { tools: ["Flipped Classroom", "Station Rotation", "Lab Rotation", "Flex Model", "Hybrid Model", "Online Driver"], concepts: ["Aralash ta'lim", "Sinxron", "Asinxron", "Gibrid", "Face-to-face", "Blended Learning"], activities: ["mustaqil o'rganish", "muhokama qilish", "amaliyot", "uyga vazifa", "guruhda ishlash", "konsultatsiya"] },
+  6: { tools: ["Google Drive", "OneDrive", "Dropbox", "Slack", "Trello", "Asana", "ClickUp", "Notion"], concepts: ["Bulutli muhit", "Sinxronizatsiya", "Hamkorlik", "Soft skills", "Cloud storage", "Real-time editing"], activities: ["birgalikda yozish", "share qilish", "versiyalar nazorati", "saqlash", "fayl almashish", "loyiha boshqarish"] },
+  7: { tools: ["Kahoot", "Quizizz", "Wordwall", "Classcraft", "Blooket", "Gimkit", "Baamboozle", "Genially Games"], concepts: ["Gamifikatsiya", "Liderlar jadvali", "Nishonlar", "Ochkolar", "Avatar", "Quest", "Narrative"], activities: ["musobaqalashish", "rag'batlantirish", "o'yin boshlash", "test yechish", "missiya bajarish", "level ko'tarish"] },
+  8: { tools: ["Telegram Bot", "Duolingo", "Coursera App", "Podcast", "Quizlet", "Memrise", "Anki", "Busuu"], concepts: ["Mobil ta'lim", "Mikro-o'rganish", "Bite-sized", "Istalgan vaqtda", "m-Learning", "Push notifications"], activities: ["yolda o'rganish", "xabar almashish", "test topshirish", "tinglash", "takrorlash", "tezkor o'rganish"] },
+  9: { tools: ["Google Forms", "Mentimeter", "Socrative", "e-Portfolio", "Plickers", "Formative", "Nearpod"], concepts: ["Formativ", "Summativ", "Avtomatik baholash", "Rubrika", "Feedback", "Peer assessment", "Analytics"], activities: ["so'rovnoma o'tkazish", "tahlil", "feedback berish", "monitoring", "baholash", "xato ustida ishlash"] },
+  10: { tools: ["Artivive", "CoSpaces", "Merge Cube", "Oculus", "Hololens", "Google Lens", "Unity", "Quiver"], concepts: ["VR", "AR", "Immersivlik", "3D Model", "Mixed Reality", "Spatial computing", "Simulation"], activities: ["skanerlash", "virtual sayohat", "animatsiya", "vizualizatsiya", "tajriba o'tkazish", "modellashtirish"] }
+};
 
 function generateTestParts(topicId, titleObj) {
-  const parts = [];
-  
-  for (let p = 1; p <= 6; p++) {
-    const questions = [];
-    const optionsUz = ["Variant 1: An'anaviy yondashuv", "Variant 2: Innovatsion raqamli yechim", "Variant 3: Faqat kitobdan o'qish", "Variant 4: Hech qaysisi"];
-    const optionsRu = ["Вариант 1: Традиционный подход", "Вариант 2: Инновационное цифровое решение", "Вариант 3: Только чтение книг", "Вариант 4: Ни один из вышеперечисленных"];
-    const optionsEn = ["Option 1: Traditional approach", "Option 2: Innovative digital solution", "Option 3: Reading books only", "Option 4: None of the above"];
-    
-    for (let i = 1; i <= 25; i++) {
-      questions.push({
-        q: {
-          uz: `"${titleObj.uz}" mavzusi, ${p}-qism testlari doirasida ${i}-savol. Agar o'quvchi darsga qiziqmasa, qanday raqamli vositadan foydalanish eng to'g'ri bo'ladi?`,
-          ru: `Вопрос ${i} (часть ${p}) в рамках темы "${titleObj.ru}". Какой цифровой инструмент лучше всего использовать, если ученику не интересен урок?`,
-          en: `Question ${i} (part ${p}) within the topic "${titleObj.en}". Which digital tool is best to use if a student is not interested in the lesson?`
-        },
-        options: { uz: optionsUz, ru: optionsRu, en: optionsEn },
-        answer: 1
+    const parts = [];
+    const keywords = topicKeywords[topicId] || topicKeywords[1];
+    for (let p = 1; p <= 6; p++) {
+      const questions = [];
+      for (let i = 1; i <= 25; i++) {
+        const tool = keywords.tools[(i + p * 7) % keywords.tools.length];
+        const concept = keywords.concepts[(i * p + 3) % keywords.concepts.length];
+        const activity = keywords.activities[(i + p * 11) % keywords.activities.length];
+        const templateIdx = (i + p + topicId) % 8;
+        let qUz, qRu, qEn;
+        if (templateIdx === 0) {
+          qUz = `${tool} yordamida qanday ${activity} mumkin?`;
+          qRu = `Как можно ${activity} с помощью ${tool}?`;
+          qEn = `How can you ${activity} using ${tool}?`;
+        } else if (templateIdx === 1) {
+          qUz = `${concept} tushunchasi ${titleObj.uz} mavzusida nimani anglatadi?`;
+          qRu = `Что означает понятие ${concept} в теме ${titleObj.ru}?`;
+          qEn = `What does the concept ${concept} mean in the context of ${titleObj.en}?`;
+        } else if (templateIdx === 2) {
+          qUz = `${activity} jarayoni uchun eng mos keladigan ${titleObj.uz} vositasi?`;
+          qRu = `Наиболее подходящий инструмент ${titleObj.ru} для процесса ${activity}?`;
+          qEn = `The most suitable ${titleObj.en} tool for the process of ${activity}?`;
+        } else if (templateIdx === 3) {
+          qUz = `Nima uchun ${concept} raqamli darslarda juda muhim hisoblanadi?`;
+          qRu = `Почему ${concept} считается очень важным в цифровых уроках?`;
+          qEn = `Why is ${concept} considered very important in digital lessons?`;
+        } else if (templateIdx === 4) {
+          qUz = `${tool} va ${concept} o'zaro qanday bog'liq?`;
+          qRu = `Как связаны ${tool} и ${concept}?`;
+          qEn = `How are ${tool} and ${concept} related?`;
+        } else if (templateIdx === 5) {
+          qUz = `${activity} paytida yuzaga keladigan asosiy muammo nima?`;
+          qRu = `Какова основная проблема, возникающая при ${activity}?`;
+          qEn = `What is the main problem encountered during ${activity}?`;
+        } else if (templateIdx === 6) {
+          qUz = `${titleObj.uz} doirasida ${tool} ning asosiy afzalligi?`;
+          qRu = `Главное преимущество ${tool} в рамках ${titleObj.ru}?`;
+          qEn = `What is the main advantage of ${tool} within ${titleObj.en}?`;
+        } else {
+          qUz = `Qaysi metodika ${concept} ni qo'llashni talab etadi?`;
+          qRu = `Какая методика требует применения ${concept}?`;
+          qEn = `Which methodology requires the application of ${concept}?`;
+        }
+        const optionsUz = [`${tool} orqali`, `${concept} metodi`, `${activity} usuli`, "Barcha javoblar to'g'ri"];
+        const optionsRu = [`Через ${tool}`, `Метод ${concept}`, `Способ ${activity}`, "Все ответы верны"];
+        const optionsEn = [`Via ${tool}`, `Method ${concept}`, `Way of ${activity}`, "All of the above"];
+        questions.push({
+          q: { uz: qUz, ru: qRu, en: qEn },
+          options: { uz: optionsUz, ru: optionsRu, en: optionsEn },
+          answer: (i + p + topicId + templateIdx) % 4
+        });
+      }
+      parts.push({
+        id: p,
+        title: { uz: `${p}-qism`, ru: `Часть ${p}`, en: `Part ${p}` },
+        questions
       });
     }
-
-    parts.push({
-      id: p,
-      title: {
-        uz: `${p}-qism Testlari`,
-        ru: `Тесты (Часть ${p})`,
-        en: `Test Part ${p}`
-      },
-      questions
-    });
-  }
-  return parts;
+    return parts;
 }
-
-const unsplashIds = [
-  '1509062522246-3755977927d7', // education
-  '1516321318423-f06f85e504b3', // computer
-  '1432888117246-b82839d49419', // classroom
-  '1524178232363-1dc2cb065f41', // vr
-  '1531482615713-2afd69097998', // learning
-  '1503676260728-1c00da094a0b', // tech
-  '1517245386807-bb43f82c33c4', // group
-  '1522202176988-66273c2fd55f', // study
-  '1454165804606-c3d57bc86b40', // working
-  '1498050108023-c5249f4df085'  // modern tech
-];
 
 const finalTopics = topicsData.map((t, idx) => {
   const colors = ['#00f0ff', '#a855f7', '#ec4899', '#f97316', '#3b82f6', '#22c55e', '#ef4444', '#eab308', '#6366f1', '#14b8a6'];
+  const topicData = rawData[t.id] || rawData[1];
+  
   return {
     id: t.id,
     title: t.title,
     description: t.desc,
-    theory: generateTheory(t.id, t.title),
+    theory: {
+      uz: topicData.uz.join('\n\n'),
+      ru: topicData.ru.join('\n\n'),
+      en: (topicData.en || topicData.uz).join('\n\n')
+    },
     theoryImage: `https://images.unsplash.com/photo-${unsplashIds[idx]}?auto=format&fit=crop&w=1200&q=80`,
-    practice: generatePractice(t.id, t.title),
     icon: t.icon,
     color: colors[idx % colors.length],
     testParts: generateTestParts(t.id, t.title)
   };
 });
 
-const fileContent = `import { Topic } from './types'\n\nexport const pedagogyTopics: Topic[] = ${JSON.stringify(finalTopics, null, 2)};\n`;
-
-fs.writeFileSync(path.join(__dirname, 'src', 'data', 'pedagogyTopics.ts'), fileContent, 'utf-8');
-console.log('Data successfully generated!');
+fs.writeFileSync(path.join(__dirname, 'src', 'data', 'pedagogyTopics.ts'), `import { Topic } from './types'\n\nexport const pedagogyTopics: Topic[] = ${JSON.stringify(finalTopics, null, 2)};\n`, 'utf-8');
+console.log('Data successfully generated.');

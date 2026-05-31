@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { BrainCircuit, ArrowRight, Check, X, Trophy, Sparkles, Clock, Target, Globe } from 'lucide-react'
 import { useAuthStore } from '../store/useAuthStore'
@@ -141,6 +142,7 @@ const diagnosticQuestions = [
 const optionLetters = ['A', 'B', 'C', 'D']
 
 export default function DiagnosticTest() {
+  const navigate = useNavigate()
   const [current, setCurrent] = useState(0)
   const [selected, setSelected] = useState<number | null>(null)
   const [confirmed, setConfirmed] = useState(false)
@@ -203,6 +205,7 @@ export default function DiagnosticTest() {
 
   const handleComplete = async () => {
     await completeDiagnostic(score, total, answers)
+    navigate('/', { replace: true })
   }
 
   if (!started) {

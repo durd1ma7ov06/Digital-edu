@@ -150,7 +150,7 @@ export const useAppStore = create<AppState>()(
       },
     }),
     {
-      name: 'learnify-cs-store',
+      name: 'digitaledu-app-store',
     }
   )
 )

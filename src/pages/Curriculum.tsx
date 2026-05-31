@@ -1,14 +1,22 @@
 import { motion } from 'framer-motion'
-import { CheckCircle, Lock, ChevronRight } from 'lucide-react'
+import { useEffect } from 'react'
+import { BookOpen, CheckCircle, ChevronRight, Lock } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { curriculum } from '../data'
 import { useAppStore } from '../store/useAppStore'
+import { useContentStore } from '../store/useContentStore'
 import { useI18nStore } from '../store/useI18nStore'
 
 export default function Curriculum() {
   const navigate = useNavigate()
   const { completedTopics } = useAppStore()
   const { t, language } = useI18nStore()
+  const { items, fetchPublishedContent } = useContentStore()
+  const customMaterials = items.filter((item) => item.content_type === 'material')
+
+  useEffect(() => {
+    fetchPublishedContent()
+  }, [fetchPublishedContent])
 
   return (
     <div className="space-y-10 pb-20">
@@ -30,6 +38,33 @@ export default function Curriculum() {
         </motion.h1>
         <p className="text-white/40 text-sm mt-3 max-w-xl leading-relaxed">{t('platformDesc')}</p>
       </div>
+
+      {customMaterials.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <BookOpen size={20} className="text-cyan-400" />
+            <h2 className="text-xl font-bold text-white">Admin qo'shgan ma'lumotlar</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {customMaterials.map((item, index) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.03 }}
+                onClick={() => navigate(`/content/${item.id}`)}
+                className="glass-panel-hover p-5 cursor-pointer group"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-400/20 text-cyan-300 flex items-center justify-center mb-4">
+                  <BookOpen size={24} />
+                </div>
+                <h3 className="text-white font-bold mb-2 group-hover:text-cyan-300 transition-colors">{item.title}</h3>
+                <p className="text-white/45 text-sm line-clamp-3">{item.description || item.body}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="relative space-y-4">
         {/* Connection Line */}

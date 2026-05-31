@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
-  Rocket, BookOpen, Brain, Code2, Trophy, Medal, Settings, Globe, Target, LogOut, Award
+  Award, BookOpen, Brain, ClipboardCheck, FileText, Globe, GraduationCap, LogOut, Medal, Rocket, Settings, ShieldCheck, Target, Trophy, UserCheck
 } from 'lucide-react'
 import { useI18nStore } from '../store/useI18nStore'
 import { useAuthStore } from '../store/useAuthStore'
@@ -12,16 +12,29 @@ export default function Sidebar() {
   const { profile, signOut } = useAuthStore()
   const { profileImage } = useSettingsStore()
   
-  const navItems = [
+  const baseItems = [
     { to: '/', icon: Rocket, label: t('dashboard'), emoji: '🚀' },
     { to: '/curriculum', icon: BookOpen, label: t('curriculum'), emoji: '📚' },
     { to: '/quizzes', icon: Brain, label: t('quizzes'), emoji: '🧠' },
-    { to: '/practice', icon: Target, label: t('practice'), emoji: '🎯' },
     { to: '/leaderboard', icon: Trophy, label: t('leaderboard'), emoji: '🏆' },
     { to: '/achievements', icon: Medal, label: t('achievements'), emoji: '🎖' },
     { to: '/certificate', icon: Award, label: t('certificate'), emoji: '🏅' },
     { to: '/settings', icon: Settings, label: t('settings'), emoji: '⚙️' },
   ]
+
+  const navItems = [...baseItems]
+
+  if (profile?.role === 'admin') {
+    navItems.unshift({ to: '/admin', icon: ShieldCheck, label: language === 'uz' ? 'Admin Panel' : 'Admin Panel', emoji: '🛡️' })
+    navItems.splice(1, 0, { to: '/teacher', icon: GraduationCap, label: language === 'uz' ? 'O\'qituvchi' : 'Teacher', emoji: '👨‍🏫' })
+    navItems.splice(2, 0, { to: '/teacher/grading', icon: ClipboardCheck, label: language === 'uz' ? 'Baholash' : 'Grading', emoji: '✅' })
+    navItems.splice(3, 0, { to: '/admin/role-requests', icon: UserCheck, label: language === 'uz' ? 'Rol so\'rovlari' : 'Role Requests', emoji: '📋' })
+  } else if (profile?.role === 'teacher') {
+    navItems.unshift({ to: '/teacher', icon: GraduationCap, label: language === 'uz' ? 'O\'qituvchi' : 'Teacher', emoji: '👨‍🏫' })
+    navItems.splice(1, 0, { to: '/teacher/grading', icon: ClipboardCheck, label: language === 'uz' ? 'Baholash' : 'Grading', emoji: '✅' })
+  } else if (profile?.role === 'student') {
+    navItems.splice(1, 0, { to: '/submissions', icon: FileText, label: language === 'uz' ? 'Topshiriqlar' : 'Submissions', emoji: '📄' })
+  }
 
   return (
     <>
@@ -38,8 +51,8 @@ export default function Sidebar() {
             </div>
             <div>
               <h1 className="text-xl font-black tracking-tighter leading-none">
-                <span className="cyber-gradient-text uppercase">Lernify</span>
-                <span className="text-white/90 block text-[10px] tracking-[0.2em] font-light mt-1">COMPUTER SCIENCE</span>
+                <span className="cyber-gradient-text uppercase">DigitalEdu</span>
+                <span className="text-white/90 block text-[10px] tracking-[0.2em] font-light mt-1">PEDAGOGIKA</span>
               </h1>
             </div>
           </div>

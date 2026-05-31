@@ -54,8 +54,8 @@ export default function TopicDetails() {
         </div>
         
         <div className="mt-12 flex justify-end">
-          <button onClick={() => navigate('/practice')} className="btn-primary flex items-center gap-2 group">
-            {language === 'uz' ? 'Amaliyotga o\'tish' : language === 'ru' ? 'Перейти к практике' : 'Go to Practice'} 
+          <button onClick={() => navigate('/quizzes')} className="btn-primary flex items-center gap-2 group shadow-[0_0_20px_rgba(0,240,255,0.3)]">
+            {language === 'uz' ? 'Test yechishga o\'tish' : language === 'ru' ? 'Перейти к тестам' : 'Go to Quizzes'} 
             <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
           </button>
         </div>

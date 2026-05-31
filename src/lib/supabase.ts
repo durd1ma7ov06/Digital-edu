@@ -1,7 +1,21 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Kodda to'g'ridan-to'g'ri kiritilgan URL va Key
-const supabaseUrl = 'https://ihsjfhvvxaaezmgljdnq.supabase.co'
-const supabaseAnonKey = 'sb_publishable_Tcpc6CySePsV3wWZ6Un5Jg_SK410NSI'
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn('Supabase URL yoki anon key .env faylida kiritilmagan.')
+}
+
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder-anon-key',
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storageKey: 'digitaledu-auth',
+    },
+  }
+)

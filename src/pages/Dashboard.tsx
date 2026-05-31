@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Zap, Flame, BookOpen, Trophy, TrendingUp, Target } from 'lucide-react'
+import { BookOpen, ChevronRight, Flame, Target, TrendingUp, Trophy, Zap } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 import { useI18nStore } from '../store/useI18nStore'
 import { curriculum } from '../data'

@@ -1,21 +1,37 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Check, RotateCcw, Target, MonitorSmartphone, Users, AlertCircle, Clock, Star, LayoutList, Play, Square } from 'lucide-react'
+import { ArrowLeft, Check, RotateCcw, Target, MonitorSmartphone, Users, AlertCircle, Clock, Star, LayoutList, Play, Square, Upload } from 'lucide-react'
 import { curriculum } from '../data'
+import { useAuthStore } from '../store/useAuthStore'
 import { useI18nStore } from '../store/useI18nStore'
+import { useSubmissionStore } from '../store/useSubmissionStore'
+import FileUploadButton from '../components/FileUploadButton'
 
 export default function PracticePlay() {
   const { topicId } = useParams()
   const navigate = useNavigate()
   const { language } = useI18nStore()
+  const { savePracticeResult } = useAuthStore()
+  const { mySubmissions, fetchMySubmissions } = useSubmissionStore()
 
   const topic = curriculum.find(t => t.id === Number(topicId))
+  const contentItemId = topicId ? `topic-practice-${topicId}` : ''
   
   // Game state
   const [completedPhases, setCompletedPhases] = useState<number[]>([])
   const [activePhase, setActivePhase] = useState<number | null>(null)
   const [timeLeft, setTimeLeft] = useState<number>(0)
+  const [saved, setSaved] = useState(false)
+
+  // Fetch existing submission status
+  const existingSubmission = mySubmissions.find(
+    (s) => s.content_item_id === contentItemId
+  )
+
+  useEffect(() => {
+    fetchMySubmissions()
+  }, [fetchMySubmissions])
 
   useEffect(() => {
     if (activePhase === null || timeLeft <= 0) return;
@@ -49,11 +65,17 @@ export default function PracticePlay() {
     setTimeLeft(lab.phases[idx].durationMinutes * 60); // convert minutes to seconds
   }
 
-  const handleCompletePhase = (idx: number) => {
+  const handleCompletePhase = async (idx: number) => {
     setActivePhase(null);
     setTimeLeft(0);
+    const nextCompleted = completedPhases.includes(idx) ? completedPhases : [...completedPhases, idx]
     if (!completedPhases.includes(idx)) {
-      setCompletedPhases([...completedPhases, idx]);
+      setCompletedPhases(nextCompleted);
+    }
+
+    if (topic && nextCompleted.length === totalPhases && !saved) {
+      setSaved(true)
+      await savePracticeResult(topic.id, nextCompleted.length, totalPhases)
     }
   }
 
@@ -61,6 +83,7 @@ export default function PracticePlay() {
     setCompletedPhases([])
     setActivePhase(null)
     setTimeLeft(0)
+    setSaved(false)
   }
 
   return (
@@ -233,6 +256,53 @@ export default function PracticePlay() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* File Upload Section */}
+      {contentItemId && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="glass-panel p-6 mt-6"
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <Upload size={20} className="text-cyan-400" />
+            <h3 className="text-lg font-bold text-white">
+              {language === 'uz' ? 'Amaliyot faylini yuklash' : language === 'ru' ? 'Загрузить файл практики' : 'Upload Practice File'}
+            </h3>
+          </div>
+
+          {existingSubmission && (
+            <div className={`mb-4 p-3 rounded-xl border text-sm ${
+              existingSubmission.status === 'graded'
+                ? 'bg-green-500/10 border-green-500/30 text-green-300'
+                : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-300'
+            }`}>
+              <p className="font-medium">
+                {existingSubmission.status === 'graded'
+                  ? (language === 'uz' ? 'Baholangan' : language === 'ru' ? 'Оценено' : 'Graded')
+                  : (language === 'uz' ? 'Kutilmoqda' : language === 'ru' ? 'На проверке' : 'Pending review')}
+                {existingSubmission.score !== null && existingSubmission.score !== undefined && (
+                  <span className="ml-2">— {language === 'uz' ? 'Ball' : language === 'ru' ? 'Балл' : 'Score'}: {existingSubmission.score}/100</span>
+                )}
+              </p>
+              {existingSubmission.feedback && (
+                <p className="mt-1 text-white/60">{existingSubmission.feedback}</p>
+              )}
+              {existingSubmission.file_name && (
+                <p className="mt-1 text-white/40 text-xs">
+                  {language === 'uz' ? 'Fayl' : language === 'ru' ? 'Файл' : 'File'}: {existingSubmission.file_name}
+                </p>
+              )}
+            </div>
+          )}
+
+          <FileUploadButton
+            contentItemId={contentItemId}
+            onUploadComplete={() => fetchMySubmissions()}
+          />
+        </motion.div>
+      )}
     </div>
   )
 }

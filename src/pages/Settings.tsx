@@ -1,14 +1,17 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   RotateCcw, AlertTriangle, Globe, User, Palette, Volume2, VolumeX,
   Sun, Moon, Monitor, Bell, BellOff, Shield, Info, Zap, BookOpen,
-  Trophy, Target, ChevronRight, Sparkles, Heart, Camera, Trash2, ImagePlus
+  Trophy, Target, ChevronRight, Sparkles, Heart, Camera, Trash2, ImagePlus,
+  GraduationCap
 } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 import { useI18nStore } from '../store/useI18nStore'
 import { useAuthStore } from '../store/useAuthStore'
 import { useSettingsStore } from '../store/useSettingsStore'
+import { useRoleRequestStore } from '../store/useRoleRequestStore'
 import { curriculum } from '../data'
 
 /* ─── EMOJI PICKER ─── */
@@ -93,6 +96,8 @@ export default function Settings() {
   const { resetProgress, xp, level, streak, completedTopics, quizResults, achievements } = useAppStore()
   const { t, language, setLanguage } = useI18nStore()
   const { profile, updateProfile } = useAuthStore()
+  const { myRequest, fetchMyRequest } = useRoleRequestStore()
+  const navigate = useNavigate()
   const [showConfirm, setShowConfirm] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const {
@@ -100,6 +105,12 @@ export default function Settings() {
     profileImage, toggleSound, toggleNotifications, toggleAnimations, setAccentColor, setProfileImage
   } = useSettingsStore()
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (profile?.role === 'student') {
+      fetchMyRequest()
+    }
+  }, [profile?.role])
 
   const totalTopics = curriculum.length
   const avgScore = quizResults.length > 0
@@ -442,6 +453,45 @@ export default function Settings() {
           </div>
         </div>
       </Section>
+
+      {/* ─── TEACHER ROLE REQUEST (students only) ─── */}
+      {profile?.role === 'student' && (
+        <Section title={language === 'uz' ? "O'qituvchi bo'lish" : language === 'ru' ? 'Запрос роли преподавателя' : 'Request Teacher Role'} icon={GraduationCap} delay={0.22} color="#8b5cf6">
+          <div className="space-y-3">
+            {myRequest && (
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                <span className="text-xs text-white/40">
+                  {language === 'uz' ? 'Holat' : language === 'ru' ? 'Статус' : 'Status'}:
+                </span>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${
+                  myRequest.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' :
+                  myRequest.status === 'approved' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
+                  'bg-red-500/10 text-red-400 border border-red-500/20'
+                }`}>
+                  {myRequest.status === 'pending'
+                    ? (language === 'uz' ? 'Kutilmoqda' : language === 'ru' ? 'На рассмотрении' : 'Pending')
+                    : myRequest.status === 'approved'
+                    ? (language === 'uz' ? 'Tasdiqlangan' : language === 'ru' ? 'Одобрено' : 'Approved')
+                    : (language === 'uz' ? 'Rad etilgan' : language === 'ru' ? 'Отклонено' : 'Rejected')
+                  }
+                </span>
+              </div>
+            )}
+            <motion.button
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              onClick={() => navigate('/request-teacher')}
+              className="flex items-center justify-between w-full px-4 py-3 rounded-xl text-sm font-medium text-purple-400/80 bg-purple-500/5 border border-purple-500/10 hover:bg-purple-500/10 hover:border-purple-500/20 transition-all group"
+            >
+              <div className="flex items-center gap-2">
+                <GraduationCap size={14} />
+                <span>{language === 'uz' ? "O'qituvchi rolini so'rash" : language === 'ru' ? 'Запросить роль преподавателя' : 'Request Teacher Role'}</span>
+              </div>
+              <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+            </motion.button>
+          </div>
+        </Section>
+      )}
 
       {/* ─── DANGER ZONE ─── */}
       <Section title={L.danger} icon={Shield} delay={0.25} color="#ef4444">

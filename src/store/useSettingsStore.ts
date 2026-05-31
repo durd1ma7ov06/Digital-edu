@@ -31,7 +31,7 @@ export const useSettingsStore = create<SettingsState>()(
       setProfileImage: (image: string | null) => set({ profileImage: image }),
     }),
     {
-      name: 'learnify-settings-store',
+      name: 'digitaledu-settings-store',
     }
   )
 )
