@@ -5,7 +5,183 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuthStore, type Profile, type UserRole } from '../store/useAuthStore'
 import { useRoleRequestStore } from '../store/useRoleRequestStore'
+import { useI18nStore } from '../store/useI18nStore'
+import { translateToAll, translateArrayToAll, type Lang } from '../utils/translate'
 import type { ContentItem, ContentType } from '../store/useContentStore'
+
+const labels = {
+  uz: {
+    adminControl: 'Admin control',
+    adminPanel: 'Admin Panel',
+    adminDesc: 'Rollar, testlar, materiallar va amaliyotlarni boshqarish.',
+    tabUsers: 'Foydalanuvchilar',
+    tabTest: "Test qo'shish",
+    tabMaterial: "Ma'lumot",
+    tabPractice: 'Amaliyot',
+    roleRequests: "Rol so'rovlari",
+    roleRequestsDesc: "O'qituvchi rolini so'ragan foydalanuvchilar",
+    pending: 'kutilmoqda',
+    users: 'Foydalanuvchilar',
+    usersDesc: "Ro'yxatdan o'tganlar avval talaba bo'ladi, admin ularga teacher rolini beradi.",
+    searchPlaceholder: 'Ism, login yoki guruh...',
+    thUser: 'Foydalanuvchi',
+    thGroup: 'Guruh',
+    thRole: 'Rol',
+    thRegistered: "Ro'yxatdan o'tgan",
+    loading: 'Yuklanmoqda...',
+    noUsers: 'Foydalanuvchilar topilmadi',
+    unnamed: 'Nomsiz foydalanuvchi',
+    noLogin: 'login yoq',
+    noGroup: 'Guruhsiz',
+    student: 'Talaba',
+    teacher: 'Teacher',
+    roleUpdated: 'Rol yangilandi',
+    noAccess: "Ruxsat yo'q",
+    noAccessDesc: 'Bu sahifa faqat admin uchun.',
+    contentManagement: 'boshqaruvi',
+    editMode: 'Tahrirlash rejimi',
+    newContent: 'Yangi kontent',
+    titlePlaceholder: 'Sarlavha',
+    topicIdPlaceholder: 'Mavzu ID (ixtiyoriy)',
+    descPlaceholder: 'Qisqa tavsif',
+    materialPlaceholder: "O'quv materiali matni",
+    questionsPlaceholder: "Har qatorda: Savol | A | B | C | D | to'g'ri javob raqami (1-4)",
+    practicePlaceholder: 'Har qatorda: Bosqich nomi | daqiqa | topshiriq | vositalar, vergul bilan',
+    save: 'Saqlash',
+    add: "Qo'shish",
+    contents: 'Kontentlar',
+    contentsDesc: "Published kontentlar talabalar panelida ko'rinadi.",
+    noContent: "Hozircha kontent yo'q",
+    titleRequired: 'Sarlavha kiriting',
+    translating: 'Tarjima qilinmoqda...',
+    contentUpdated: 'Kontent yangilandi',
+    contentAdded: "Kontent qo'shildi",
+    saveError: 'Saqlashda xatolik yuz berdi',
+    deleteConfirm: "o'chirilsinmi?",
+    contentDeleted: "Kontent o'chirildi",
+    questionFormatError: '-savol formati noto\'g\'ri',
+    questionAnswerError: '-savolda javob raqami 1-4 oralig\'ida bo\'lishi kerak',
+    phaseFormatError: '-bosqich formati noto\'g\'ri',
+    phaseDurationError: '-bosqichda vaqt musbat raqam bo\'lishi kerak',
+    test: 'Test',
+    practice: 'Amaliyot',
+    material: "Ma'lumot",
+  },
+  ru: {
+    adminControl: 'Управление',
+    adminPanel: 'Панель администратора',
+    adminDesc: 'Управление ролями, тестами, материалами и практиками.',
+    tabUsers: 'Пользователи',
+    tabTest: 'Добавить тест',
+    tabMaterial: 'Материал',
+    tabPractice: 'Практика',
+    roleRequests: 'Запросы на роль',
+    roleRequestsDesc: 'Пользователи, запросившие роль преподавателя',
+    pending: 'ожидает',
+    users: 'Пользователи',
+    usersDesc: 'Зарегистрированные сначала становятся студентами, админ назначает роль учителя.',
+    searchPlaceholder: 'Имя, логин или группа...',
+    thUser: 'Пользователь',
+    thGroup: 'Группа',
+    thRole: 'Роль',
+    thRegistered: 'Дата регистрации',
+    loading: 'Загрузка...',
+    noUsers: 'Пользователи не найдены',
+    unnamed: 'Без имени',
+    noLogin: 'нет логина',
+    noGroup: 'Без группы',
+    student: 'Студент',
+    teacher: 'Учитель',
+    roleUpdated: 'Роль обновлена',
+    noAccess: 'Доступ запрещён',
+    noAccessDesc: 'Эта страница только для админа.',
+    contentManagement: 'управление',
+    editMode: 'Режим редактирования',
+    newContent: 'Новый контент',
+    titlePlaceholder: 'Заголовок',
+    topicIdPlaceholder: 'ID темы (необязательно)',
+    descPlaceholder: 'Краткое описание',
+    materialPlaceholder: 'Текст учебного материала',
+    questionsPlaceholder: 'Каждая строка: Вопрос | A | B | C | D | номер правильного ответа (1-4)',
+    practicePlaceholder: 'Каждая строка: Название этапа | минуты | задание | инструменты через запятую',
+    save: 'Сохранить',
+    add: 'Добавить',
+    contents: 'Контент',
+    contentsDesc: 'Опубликованный контент виден в панели студента.',
+    noContent: 'Пока контент отсутствует',
+    titleRequired: 'Введите заголовок',
+    translating: 'Перевод...',
+    contentUpdated: 'Контент обновлён',
+    contentAdded: 'Контент добавлен',
+    saveError: 'Ошибка при сохранении',
+    deleteConfirm: 'удалить?',
+    contentDeleted: 'Контент удалён',
+    questionFormatError: '-й вопрос: неверный формат',
+    questionAnswerError: '-й вопрос: номер ответа должен быть от 1 до 4',
+    phaseFormatError: '-й этап: неверный формат',
+    phaseDurationError: '-й этап: время должно быть положительным числом',
+    test: 'Тест',
+    practice: 'Практика',
+    material: 'Материал',
+  },
+  en: {
+    adminControl: 'Admin control',
+    adminPanel: 'Admin Panel',
+    adminDesc: 'Manage roles, tests, materials and practices.',
+    tabUsers: 'Users',
+    tabTest: 'Add Test',
+    tabMaterial: 'Material',
+    tabPractice: 'Practice',
+    roleRequests: 'Role Requests',
+    roleRequestsDesc: 'Users who requested a teacher role',
+    pending: 'pending',
+    users: 'Users',
+    usersDesc: 'Registered users start as students, admin assigns the teacher role.',
+    searchPlaceholder: 'Name, login or group...',
+    thUser: 'User',
+    thGroup: 'Group',
+    thRole: 'Role',
+    thRegistered: 'Registered',
+    loading: 'Loading...',
+    noUsers: 'No users found',
+    unnamed: 'Unnamed user',
+    noLogin: 'no login',
+    noGroup: 'No group',
+    student: 'Student',
+    teacher: 'Teacher',
+    roleUpdated: 'Role updated',
+    noAccess: 'Access denied',
+    noAccessDesc: 'This page is for admins only.',
+    contentManagement: 'management',
+    editMode: 'Editing mode',
+    newContent: 'New content',
+    titlePlaceholder: 'Title',
+    topicIdPlaceholder: 'Topic ID (optional)',
+    descPlaceholder: 'Short description',
+    materialPlaceholder: 'Study material text',
+    questionsPlaceholder: 'Each line: Question | A | B | C | D | correct answer number (1-4)',
+    practicePlaceholder: 'Each line: Phase name | minutes | task | tools, comma separated',
+    save: 'Save',
+    add: 'Add',
+    contents: 'Content',
+    contentsDesc: 'Published content is visible in the student panel.',
+    noContent: 'No content yet',
+    titleRequired: 'Enter a title',
+    translating: 'Translating...',
+    contentUpdated: 'Content updated',
+    contentAdded: 'Content added',
+    saveError: 'Error saving content',
+    deleteConfirm: 'delete?',
+    contentDeleted: 'Content deleted',
+    questionFormatError: ' question: invalid format',
+    questionAnswerError: ' question: answer must be between 1-4',
+    phaseFormatError: ' phase: invalid format',
+    phaseDurationError: ' phase: duration must be a positive number',
+    test: 'Test',
+    practice: 'Practice',
+    material: 'Material',
+  },
+}
 
 type AdminTab = 'users' | 'test' | 'material' | 'practice'
 
@@ -38,16 +214,17 @@ function tabToType(tab: AdminTab): ContentType | null {
   return null
 }
 
-function contentTypeLabel(type: ContentType) {
-  if (type === 'test') return 'Test'
-  if (type === 'practice') return 'Amaliyot'
-  return "Ma'lumot"
+function contentTypeLabel(type: ContentType, L: typeof labels['uz']) {
+  if (type === 'test') return L.test
+  if (type === 'practice') return L.practice
+  return L.material
 }
 
-function parseQuestions(raw: string) {
+async function parseQuestions(raw: string, sourceLang: Lang) {
   const lines = raw.split('\n').map((line) => line.trim()).filter(Boolean)
-  return lines.map((line, index) => {
-    const parts = line.split('|').map((part) => part.trim())
+  const result = []
+  for (let index = 0; index < lines.length; index++) {
+    const parts = lines[index].split('|').map((part) => part.trim())
     if (parts.length < 6) {
       throw new Error(`${index + 1}-savol formati noto'g'ri`)
     }
@@ -58,13 +235,17 @@ function parseQuestions(raw: string) {
       throw new Error(`${index + 1}-savolda javob raqami 1-4 oralig'ida bo'lishi kerak`)
     }
 
-    const options = [a, b, c, d]
-    return {
-      q: { uz: question, ru: question, en: question },
-      options: { uz: options, ru: options, en: options },
+    // Savol va variantlarni 3 tilga avtomatik tarjima qilish
+    const qTranslated = await translateToAll(question, sourceLang)
+    const optionsTranslated = await translateArrayToAll([a, b, c, d], sourceLang)
+
+    result.push({
+      q: qTranslated,
+      options: optionsTranslated,
       answer: answer - 1,
-    }
-  })
+    })
+  }
+  return result
 }
 
 function serializeQuestions(item: ContentItem) {
@@ -76,35 +257,43 @@ function serializeQuestions(item: ContentItem) {
     .join('\n')
 }
 
-function parsePractice(raw: string, description: string) {
-  const phases = raw
+async function parsePractice(raw: string, description: string, sourceLang: Lang) {
+  const rawPhases = raw
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean)
-    .map((line, index) => {
-      const parts = line.split('|').map((part) => part.trim())
-      if (parts.length < 3) {
-        throw new Error(`${index + 1}-bosqich formati noto'g'ri`)
-      }
 
-      const [title, minutesText, phaseDescription, toolsText = ''] = parts
-      const durationMinutes = Number(minutesText)
-      if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
-        throw new Error(`${index + 1}-bosqichda vaqt musbat raqam bo'lishi kerak`)
-      }
+  const phases = []
+  for (let index = 0; index < rawPhases.length; index++) {
+    const parts = rawPhases[index].split('|').map((part) => part.trim())
+    if (parts.length < 3) {
+      throw new Error(`${index + 1}-bosqich formati noto'g'ri`)
+    }
 
-      return {
-        title,
-        duration: `${durationMinutes} daqiqa`,
-        durationMinutes,
-        description: phaseDescription,
-        tools: toolsText.split(',').map((tool) => tool.trim()).filter(Boolean),
-      }
+    const [title, minutesText, phaseDescription, toolsText = ''] = parts
+    const durationMinutes = Number(minutesText)
+    if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
+      throw new Error(`${index + 1}-bosqichda vaqt musbat raqam bo'lishi kerak`)
+    }
+
+    // Bosqich nomi va tavsifini 3 tilga tarjima qilish
+    const titleT = await translateToAll(title, sourceLang)
+    const descT = await translateToAll(phaseDescription, sourceLang)
+
+    phases.push({
+      title: titleT,
+      duration: `${durationMinutes}`,
+      durationMinutes,
+      description: descT,
+      tools: toolsText.split(',').map((tool) => tool.trim()).filter(Boolean),
     })
+  }
+
+  const objectiveT = await translateToAll(description, sourceLang)
 
   return {
-    objective: description,
-    groupTask: description,
+    objective: objectiveT,
+    groupTask: objectiveT,
     phases,
   }
 }
@@ -127,6 +316,8 @@ export default function AdminPanel() {
 
   const { profile, user } = useAuthStore()
   const { allRequests, fetchAllRequests } = useRoleRequestStore()
+  const { language } = useI18nStore()
+  const L = labels[language]
   const navigate = useNavigate()
   const activeContentType = tabToType(activeTab)
 
@@ -192,7 +383,7 @@ export default function AdminPanel() {
       return
     }
 
-    setMessage('Rol yangilandi')
+    setMessage(L.roleUpdated)
     fetchUsers()
   }
 
@@ -224,19 +415,21 @@ export default function AdminPanel() {
     setMessage('')
 
     if (!form.title.trim()) {
-      setError('Sarlavha kiriting')
+      setError(L.titleRequired)
       return
     }
 
     try {
+      setMessage(L.translating)
+      
       const payload = {
         content_type: activeContentType,
         title: form.title.trim(),
         description: form.description.trim(),
         body: activeContentType === 'material' ? form.body.trim() : '',
         topic_id: form.topicId ? Number(form.topicId) : null,
-        questions: activeContentType === 'test' ? parseQuestions(form.questionsText) : [],
-        practice: activeContentType === 'practice' ? parsePractice(form.practiceText, form.description.trim()) : {},
+        questions: activeContentType === 'test' ? await parseQuestions(form.questionsText, language as Lang) : [],
+        practice: activeContentType === 'practice' ? await parsePractice(form.practiceText, form.description.trim(), language as Lang) : {},
         status: form.status,
         created_by: user?.id || null,
         updated_at: new Date().toISOString(),
@@ -249,16 +442,16 @@ export default function AdminPanel() {
       const { error: saveError } = await request
       if (saveError) throw saveError
 
-      setMessage(form.editingId ? 'Kontent yangilandi' : 'Kontent qo\'shildi')
+      setMessage(form.editingId ? L.contentUpdated : L.contentAdded)
       setForm(emptyForm)
       fetchContent(activeContentType)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Saqlashda xatolik yuz berdi')
+      setError(err instanceof Error ? err.message : L.saveError)
     }
   }
 
   const deleteContent = async (item: ContentItem) => {
-    if (!window.confirm(`${item.title} o'chirilsinmi?`)) return
+    if (!window.confirm(`${item.title} ${L.deleteConfirm}`)) return
 
     const { error: deleteError } = await supabase
       .from('content_items')
@@ -270,7 +463,7 @@ export default function AdminPanel() {
       return
     }
 
-    setMessage('Kontent o\'chirildi')
+    setMessage(L.contentDeleted)
     fetchContent(item.content_type)
   }
 
@@ -278,17 +471,17 @@ export default function AdminPanel() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-white p-6">
         <ShieldCheck size={64} className="text-red-500 mb-4" />
-        <h1 className="text-2xl font-bold">Ruxsat yo'q</h1>
-        <p className="text-white/60">Bu sahifa faqat admin uchun.</p>
+        <h1 className="text-2xl font-bold">{L.noAccess}</h1>
+        <p className="text-white/60">{L.noAccessDesc}</p>
       </div>
     )
   }
 
   const tabs: Array<{ id: AdminTab; label: string; icon: typeof Users }> = [
-    { id: 'users', label: 'Foydalanuvchilar', icon: Users },
-    { id: 'test', label: "Test qo'shish", icon: ClipboardList },
-    { id: 'material', label: "Ma'lumot", icon: FileText },
-    { id: 'practice', label: "Amaliyot", icon: GraduationCap },
+    { id: 'users', label: L.tabUsers, icon: Users },
+    { id: 'test', label: L.tabTest, icon: ClipboardList },
+    { id: 'material', label: L.tabMaterial, icon: FileText },
+    { id: 'practice', label: L.tabPractice, icon: GraduationCap },
   ]
 
   return (
@@ -297,10 +490,10 @@ export default function AdminPanel() {
         <div>
           <div className="flex items-center gap-2 mb-2 text-cyan-400">
             <ShieldCheck size={18} />
-            <span className="text-xs font-black uppercase tracking-[0.25em]">Admin control</span>
+            <span className="text-xs font-black uppercase tracking-[0.25em]">{L.adminControl}</span>
           </div>
-          <h1 className="text-3xl font-black text-white tracking-tight">Admin Panel</h1>
-          <p className="text-white/50 mt-1">Rollar, testlar, materiallar va amaliyotlarni boshqarish.</p>
+          <h1 className="text-3xl font-black text-white tracking-tight">{L.adminPanel}</h1>
+          <p className="text-white/50 mt-1">{L.adminDesc}</p>
         </div>
 
         <div className="grid grid-cols-2 md:flex p-1 rounded-2xl bg-white/[0.03] border border-white/[0.06] gap-1">
@@ -333,13 +526,13 @@ export default function AdminPanel() {
             <UserCheck size={22} className="text-purple-400" />
           </div>
           <div>
-            <h3 className="text-white font-bold group-hover:text-cyan-300 transition-colors">Rol so'rovlari</h3>
-            <p className="text-white/40 text-sm">O'qituvchi rolini so'ragan foydalanuvchilar</p>
+            <h3 className="text-white font-bold group-hover:text-cyan-300 transition-colors">{L.roleRequests}</h3>
+            <p className="text-white/40 text-sm">{L.roleRequestsDesc}</p>
           </div>
         </div>
         {pendingRequestCount > 0 && (
           <span className="px-3 py-1.5 rounded-full bg-orange-500/15 border border-orange-400/20 text-orange-300 text-sm font-bold">
-            {pendingRequestCount} kutilmoqda
+            {pendingRequestCount} {L.pending}
           </span>
         )}
       </div>
@@ -354,8 +547,8 @@ export default function AdminPanel() {
         <div className="glass-panel overflow-hidden border-white/5">
           <div className="p-6 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h2 className="text-xl font-bold text-white">Foydalanuvchilar</h2>
-              <p className="text-white/40 text-sm mt-1">Ro'yxatdan o'tganlar avval talaba bo'ladi, admin ularga teacher rolini beradi.</p>
+              <h2 className="text-xl font-bold text-white">{L.users}</h2>
+              <p className="text-white/40 text-sm mt-1">{L.usersDesc}</p>
             </div>
             <div className="relative w-full md:max-w-sm">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/25" size={18} />
@@ -363,7 +556,7 @@ export default function AdminPanel() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Ism, login yoki guruh..."
+                placeholder={L.searchPlaceholder}
                 className="w-full pl-12 pr-4 py-3 rounded-2xl bg-white/[0.03] border border-white/5 text-white text-sm focus:outline-none focus:border-cyan-500/30"
               />
             </div>
@@ -373,20 +566,20 @@ export default function AdminPanel() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-white/[0.02] text-white/40 text-xs font-bold uppercase tracking-wider">
-                  <th className="px-6 py-4">Foydalanuvchi</th>
-                  <th className="px-6 py-4">Guruh</th>
-                  <th className="px-6 py-4">Rol</th>
-                  <th className="px-6 py-4">Ro'yxatdan o'tgan</th>
+                  <th className="px-6 py-4">{L.thUser}</th>
+                  <th className="px-6 py-4">{L.thGroup}</th>
+                  <th className="px-6 py-4">{L.thRole}</th>
+                  <th className="px-6 py-4">{L.thRegistered}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {loading ? (
                   <tr>
-                    <td colSpan={4} className="px-6 py-12 text-center text-white/30">Yuklanmoqda...</td>
+                    <td colSpan={4} className="px-6 py-12 text-center text-white/30">{L.loading}</td>
                   </tr>
                 ) : filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-6 py-12 text-center text-white/30">Foydalanuvchilar topilmadi</td>
+                    <td colSpan={4} className="px-6 py-12 text-center text-white/30">{L.noUsers}</td>
                   </tr>
                 ) : (
                   filteredUsers.map((item) => (
@@ -397,14 +590,14 @@ export default function AdminPanel() {
                             {item.avatar_emoji || '🎯'}
                           </div>
                           <div>
-                            <div className="text-white font-bold text-sm">{item.full_name || 'Nomsiz foydalanuvchi'}</div>
-                            <div className="text-white/35 text-xs">@{item.username || 'login yoq'}</div>
+                            <div className="text-white font-bold text-sm">{item.full_name || L.unnamed}</div>
+                            <div className="text-white/35 text-xs">@{item.username || L.noLogin}</div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/60 text-xs font-medium">
-                          {item.group_name || 'Guruhsiz'}
+                          {item.group_name || L.noGroup}
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -418,8 +611,8 @@ export default function AdminPanel() {
                             onChange={(e) => updateRole(item.id, e.target.value as Exclude<UserRole, 'admin'>)}
                             className="bg-black/40 border border-white/10 text-white text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500/50"
                           >
-                            <option value="student">Talaba</option>
-                            <option value="teacher">Teacher</option>
+                            <option value="student">{L.student}</option>
+                            <option value="teacher">{L.teacher}</option>
                           </select>
                         )}
                       </td>
@@ -438,8 +631,8 @@ export default function AdminPanel() {
           <div className="glass-panel p-6 border-white/5 h-fit">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h2 className="text-xl font-bold text-white">{contentTypeLabel(activeContentType)} boshqaruvi</h2>
-                <p className="text-white/40 text-xs mt-1">{form.editingId ? 'Tahrirlash rejimi' : 'Yangi kontent'}</p>
+                <h2 className="text-xl font-bold text-white">{contentTypeLabel(activeContentType, L)} {L.contentManagement}</h2>
+                <p className="text-white/40 text-xs mt-1">{form.editingId ? L.editMode : L.newContent}</p>
               </div>
               <button onClick={resetForm} className="p-2 rounded-xl text-white/40 hover:text-white hover:bg-white/5">
                 <Plus size={18} />
@@ -450,19 +643,19 @@ export default function AdminPanel() {
               <input
                 value={form.title}
                 onChange={(e) => setForm((state) => ({ ...state, title: e.target.value }))}
-                placeholder="Sarlavha"
+                placeholder={L.titlePlaceholder}
                 className="w-full px-4 py-3 rounded-2xl bg-black/20 border border-white/5 text-white text-sm focus:outline-none focus:border-cyan-500/35"
               />
               <input
                 value={form.topicId}
                 onChange={(e) => setForm((state) => ({ ...state, topicId: e.target.value.replace(/\D/g, '') }))}
-                placeholder="Mavzu ID (ixtiyoriy)"
+                placeholder={L.topicIdPlaceholder}
                 className="w-full px-4 py-3 rounded-2xl bg-black/20 border border-white/5 text-white text-sm focus:outline-none focus:border-cyan-500/35"
               />
               <textarea
                 value={form.description}
                 onChange={(e) => setForm((state) => ({ ...state, description: e.target.value }))}
-                placeholder="Qisqa tavsif"
+                placeholder={L.descPlaceholder}
                 rows={3}
                 className="w-full px-4 py-3 rounded-2xl bg-black/20 border border-white/5 text-white text-sm focus:outline-none focus:border-cyan-500/35 resize-none"
               />
@@ -471,7 +664,7 @@ export default function AdminPanel() {
                 <textarea
                   value={form.body}
                   onChange={(e) => setForm((state) => ({ ...state, body: e.target.value }))}
-                  placeholder="O'quv materiali matni"
+                  placeholder={L.materialPlaceholder}
                   rows={9}
                   className="w-full px-4 py-3 rounded-2xl bg-black/20 border border-white/5 text-white text-sm focus:outline-none focus:border-cyan-500/35 resize-none"
                 />
@@ -481,7 +674,7 @@ export default function AdminPanel() {
                 <textarea
                   value={form.questionsText}
                   onChange={(e) => setForm((state) => ({ ...state, questionsText: e.target.value }))}
-                  placeholder={"Har qatorda: Savol | A | B | C | D | to'g'ri javob raqami (1-4)"}
+                  placeholder={L.questionsPlaceholder}
                   rows={9}
                   className="w-full px-4 py-3 rounded-2xl bg-black/20 border border-white/5 text-white text-sm focus:outline-none focus:border-cyan-500/35 resize-none"
                 />
@@ -491,7 +684,7 @@ export default function AdminPanel() {
                 <textarea
                   value={form.practiceText}
                   onChange={(e) => setForm((state) => ({ ...state, practiceText: e.target.value }))}
-                  placeholder={"Har qatorda: Bosqich nomi | daqiqa | topshiriq | vositalar, vergul bilan"}
+                  placeholder={L.practicePlaceholder}
                   rows={9}
                   className="w-full px-4 py-3 rounded-2xl bg-black/20 border border-white/5 text-white text-sm focus:outline-none focus:border-cyan-500/35 resize-none"
                 />
@@ -507,21 +700,21 @@ export default function AdminPanel() {
               </select>
 
               <button onClick={saveContent} className="btn-primary w-full flex items-center justify-center gap-2">
-                <Save size={16} /> {form.editingId ? 'Saqlash' : "Qo'shish"}
+                <Save size={16} /> {form.editingId ? L.save : L.add}
               </button>
             </div>
           </div>
 
           <div className="glass-panel overflow-hidden border-white/5">
             <div className="p-6 border-b border-white/5">
-              <h2 className="text-xl font-bold text-white">Kontentlar</h2>
-              <p className="text-white/40 text-sm mt-1">Published kontentlar talabalar panelida ko'rinadi.</p>
+              <h2 className="text-xl font-bold text-white">{L.contents}</h2>
+              <p className="text-white/40 text-sm mt-1">{L.contentsDesc}</p>
             </div>
             <div className="divide-y divide-white/5">
               {loading ? (
-                <div className="p-10 text-center text-white/30">Yuklanmoqda...</div>
+                <div className="p-10 text-center text-white/30">{L.loading}</div>
               ) : contentItems.length === 0 ? (
-                <div className="p-10 text-center text-white/30">Hozircha kontent yo'q</div>
+                <div className="p-10 text-center text-white/30">{L.noContent}</div>
               ) : (
                 contentItems.map((item) => (
                   <div key={item.id} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-white/[0.02]">

@@ -1,7 +1,86 @@
 import { useState, type FormEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { BookOpen, Eye, EyeOff, Lock, LogIn, Mail, ShieldCheck, Sparkles, User, UserPlus, Users } from 'lucide-react'
+import { BookOpen, Eye, EyeOff, Lock, LogIn, Mail, Sparkles, User, UserPlus, Users } from 'lucide-react'
 import { useAuthStore } from '../store/useAuthStore'
+import { useI18nStore } from '../store/useI18nStore'
+
+const labels = {
+  uz: {
+    subtitle: "Rollar asosidagi ta'lim platformasi",
+    login: 'Kirish',
+    register: "Ro'yxatdan o'tish",
+    fullName: "To'liq ism",
+    fullNamePlaceholder: 'Ism familiya',
+    group: 'Guruh',
+    groupPlaceholder: 'Masalan: CS-101',
+    email: 'Email',
+    password: 'Parol',
+    passwordPlaceholder: 'Parol',
+    loginBtn: 'Tizimga kirish',
+    registerBtn: "Ro'yxatdan o'tish",
+    enterEmail: 'Email kiriting',
+    passwordMin: "Parol kamida 6 ta belgidan iborat bo'lishi kerak",
+    enterFullName: "To'liq ism kiriting",
+    registerSuccess: "Siz muvaffaqiyatli ro'yxatdan o'tdingiz! Endi tizimga kirishingiz mumkin.",
+    errorTitle: 'Xatolik yuz berdi',
+    emailNotConfirmed: "Email tasdiqlanmagan. Iltimos, pochtangizni tekshiring yoki admin bilan bog'laning.",
+    successTitle: 'Muvaffaqiyatli!',
+    noAccount: "Hisobingiz yo'qmi?",
+    hasAccount: 'Hisobingiz bormi?',
+    showPassword: "Parolni ko'rsatish",
+    hidePassword: 'Parolni yashirish',
+  },
+  ru: {
+    subtitle: 'Образовательная платформа на основе ролей',
+    login: 'Вход',
+    register: 'Регистрация',
+    fullName: 'Полное имя',
+    fullNamePlaceholder: 'Имя Фамилия',
+    group: 'Группа',
+    groupPlaceholder: 'Например: CS-101',
+    email: 'Email',
+    password: 'Пароль',
+    passwordPlaceholder: 'Пароль',
+    loginBtn: 'Войти в систему',
+    registerBtn: 'Зарегистрироваться',
+    enterEmail: 'Введите email',
+    passwordMin: 'Пароль должен содержать не менее 6 символов',
+    enterFullName: 'Введите полное имя',
+    registerSuccess: 'Вы успешно зарегистрировались! Теперь вы можете войти в систему.',
+    errorTitle: 'Произошла ошибка',
+    emailNotConfirmed: 'Email не подтверждён. Проверьте почту или свяжитесь с администратором.',
+    successTitle: 'Успешно!',
+    noAccount: 'Нет аккаунта?',
+    hasAccount: 'Есть аккаунт?',
+    showPassword: 'Показать пароль',
+    hidePassword: 'Скрыть пароль',
+  },
+  en: {
+    subtitle: 'Role-based educational platform',
+    login: 'Sign In',
+    register: 'Sign Up',
+    fullName: 'Full Name',
+    fullNamePlaceholder: 'First Last',
+    group: 'Group',
+    groupPlaceholder: 'e.g. CS-101',
+    email: 'Email',
+    password: 'Password',
+    passwordPlaceholder: 'Password',
+    loginBtn: 'Sign In',
+    registerBtn: 'Sign Up',
+    enterEmail: 'Enter your email',
+    passwordMin: 'Password must be at least 6 characters',
+    enterFullName: 'Enter your full name',
+    registerSuccess: 'You have successfully registered! You can now sign in.',
+    errorTitle: 'An error occurred',
+    emailNotConfirmed: 'Email not confirmed. Please check your inbox or contact an admin.',
+    successTitle: 'Success!',
+    noAccount: "Don't have an account?",
+    hasAccount: 'Already have an account?',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
+  },
+}
 
 export default function AuthPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login')
@@ -15,6 +94,8 @@ export default function AuthPage() {
   const [submitting, setSubmitting] = useState(false)
 
   const { signIn, signUp } = useAuthStore()
+  const { language, setLanguage } = useI18nStore()
+  const L = labels[language]
 
   const switchMode = (nextMode: 'login' | 'register') => {
     setMode(nextMode)
@@ -29,12 +110,12 @@ export default function AuthPage() {
     setSuccess('')
 
     if (!identifier.trim()) {
-      setError('Email kiriting')
+      setError(L.enterEmail)
       return
     }
 
     if (password.length < 6) {
-      setError("Parol kamida 6 ta belgidan iborat bo'lishi kerak")
+      setError(L.passwordMin)
       return
     }
 
@@ -45,7 +126,7 @@ export default function AuthPage() {
       if (result.error) setError(result.error)
     } else {
       if (!fullName.trim()) {
-        setError("To'liq ism kiriting")
+        setError(L.enterFullName)
         setSubmitting(false)
         return
       }
@@ -54,11 +135,10 @@ export default function AuthPage() {
       if (result.error) {
         setError(result.error)
       } else {
-        setSuccess("Siz muvaffaqiyatli ro'yxatdan o'tdingiz! Endi tizimga kirishingiz mumkin.")
+        setSuccess(L.registerSuccess)
         setTimeout(() => {
           setMode('login')
           setPassword('')
-          // Keep identifier (email) for easier login
         }, 2000)
       }
     }
@@ -93,7 +173,25 @@ export default function AuthPage() {
           <h1 className="text-4xl font-black text-white tracking-tighter mb-2">
             <span className="cyber-gradient-text">DigitalEdu</span>
           </h1>
-          <p className="text-white/45 text-sm font-medium">Rollar asosidagi ta'lim platformasi</p>
+          <p className="text-white/45 text-sm font-medium">{L.subtitle}</p>
+
+          {/* Til tanlash */}
+          <div className="flex items-center justify-center gap-2 mt-5">
+            {(['uz', 'ru', 'en'] as const).map((lang) => (
+              <button
+                key={lang}
+                type="button"
+                onClick={() => setLanguage(lang)}
+                className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-all ${
+                  language === lang
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/30'
+                    : 'text-white/40 hover:text-white/70 border border-transparent'
+                }`}
+              >
+                {lang === 'uz' ? "O'zbekcha" : lang === 'ru' ? 'Русский' : 'English'}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="glass-panel p-6 sm:p-8 relative overflow-hidden">
@@ -107,7 +205,7 @@ export default function AuthPage() {
                   : 'text-white/35 hover:text-white/60'
               }`}
             >
-              <LogIn size={16} /> Kirish
+              <LogIn size={16} /> {L.login}
             </button>
             <button
               type="button"
@@ -118,21 +216,9 @@ export default function AuthPage() {
                   : 'text-white/35 hover:text-white/60'
               }`}
             >
-              <UserPlus size={16} /> Ro'yxatdan o'tish
+              <UserPlus size={16} /> {L.register}
             </button>
           </div>
-
-          {mode === 'login' && (
-            <div className="mb-5 rounded-2xl border border-cyan-400/15 bg-cyan-400/5 p-4 flex gap-3">
-              <ShieldCheck size={18} className="text-cyan-400 shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-bold text-white">Admin kirishi</p>
-                <p className="text-xs text-white/45 mt-1">
-                  Admin ham email va parol orqali kiradi. Admin roli bazada bir marta qo'lda beriladi.
-                </p>
-              </div>
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <AnimatePresence mode="wait">
@@ -144,28 +230,28 @@ export default function AuthPage() {
                   className="space-y-5"
                 >
                   <label className="block">
-                    <span className="text-xs font-bold text-white/45 mb-2 block">To'liq ism</span>
+                    <span className="text-xs font-bold text-white/45 mb-2 block">{L.fullName}</span>
                     <div className="relative">
                       <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/25" />
                       <input
                         type="text"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        placeholder="Ism familiya"
+                        placeholder={L.fullNamePlaceholder}
                         className="w-full pl-12 pr-4 py-4 rounded-2xl bg-black/20 border border-white/5 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-purple-500/40"
                       />
                     </div>
                   </label>
 
                   <label className="block">
-                    <span className="text-xs font-bold text-white/45 mb-2 block">Guruh</span>
+                    <span className="text-xs font-bold text-white/45 mb-2 block">{L.group}</span>
                     <div className="relative">
                       <Users size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/25" />
                       <input
                         type="text"
                         value={groupName}
                         onChange={(e) => setGroupName(e.target.value)}
-                        placeholder="Masalan: CS-101"
+                        placeholder={L.groupPlaceholder}
                         className="w-full pl-12 pr-4 py-4 rounded-2xl bg-black/20 border border-white/5 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-purple-500/40"
                       />
                     </div>
@@ -175,7 +261,7 @@ export default function AuthPage() {
             </AnimatePresence>
 
             <label className="block">
-              <span className="text-xs font-bold text-white/45 mb-2 block">Email</span>
+              <span className="text-xs font-bold text-white/45 mb-2 block">{L.email}</span>
               <div className="relative">
                 <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/25" />
                 <input
@@ -190,14 +276,14 @@ export default function AuthPage() {
             </label>
 
             <label className="block">
-              <span className="text-xs font-bold text-white/45 mb-2 block">Parol</span>
+              <span className="text-xs font-bold text-white/45 mb-2 block">{L.password}</span>
               <div className="relative">
                 <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/25" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Parol"
+                  placeholder={L.passwordPlaceholder}
                   required
                   className="w-full pl-12 pr-12 py-4 rounded-2xl bg-black/20 border border-white/5 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-cyan-500/40"
                 />
@@ -205,7 +291,7 @@ export default function AuthPage() {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-white/25 hover:text-white transition-colors"
-                  aria-label={showPassword ? 'Parolni yashirish' : "Parolni ko'rsatish"}
+                  aria-label={showPassword ? L.hidePassword : L.showPassword}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -226,7 +312,7 @@ export default function AuthPage() {
               ) : (
                 <>
                   {mode === 'login' ? <LogIn size={18} /> : <UserPlus size={18} />}
-                  {mode === 'login' ? 'Tizimga kirish' : "Ro'yxatdan o'tish"}
+                  {mode === 'login' ? L.loginBtn : L.registerBtn}
                 </>
               )}
             </button>
@@ -244,8 +330,8 @@ export default function AuthPage() {
                    <div className="w-1.5 h-1.5 rounded-full bg-red-400" />
                 </div>
                 <div>
-                  <p className="font-bold mb-1 text-red-200">Xatolik yuz berdi</p>
-                  <p className="opacity-80">{error === 'Email not confirmed' ? "Email tasdiqlanmagan. Iltimos, pochtangizni tekshiring yoki admin bilan bog'laning." : error}</p>
+                  <p className="font-bold mb-1 text-red-200">{L.errorTitle}</p>
+                  <p className="opacity-80">{error === 'Email not confirmed' ? L.emailNotConfirmed : error}</p>
                 </div>
               </motion.div>
             )}
@@ -260,7 +346,7 @@ export default function AuthPage() {
                    <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
                 </div>
                 <div>
-                  <p className="font-bold mb-1 text-green-200">Muvaffaqiyatli!</p>
+                  <p className="font-bold mb-1 text-green-200">{L.successTitle}</p>
                   <p className="opacity-80">{success}</p>
                 </div>
               </motion.div>
@@ -269,13 +355,13 @@ export default function AuthPage() {
         </div>
 
         <p className="text-center text-white/35 text-sm mt-7">
-          {mode === 'login' ? "Hisobingiz yo'qmi?" : 'Hisobingiz bormi?'}{' '}
+          {mode === 'login' ? L.noAccount : L.hasAccount}{' '}
           <button
             type="button"
             onClick={() => switchMode(mode === 'login' ? 'register' : 'login')}
             className="text-cyan-400 hover:text-cyan-300 font-bold underline underline-offset-4"
           >
-            {mode === 'login' ? "Ro'yxatdan o'tish" : 'Kirish'}
+            {mode === 'login' ? L.register : L.login}
           </button>
         </p>
       </motion.div>
