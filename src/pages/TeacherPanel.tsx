@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase'
 import { useAuthStore, type Profile } from '../store/useAuthStore'
 import { useSubmissionStore } from '../store/useSubmissionStore'
 import { useI18nStore } from '../store/useI18nStore'
+import { generateFakeProfiles } from '../data/fakeProfiles'
 
 const labels = {
   uz: {
@@ -178,7 +179,14 @@ export default function TeacherPanel() {
         .limit(200),
     ])
 
-    setStudents((studentData || []) as Profile[])
+    // Haqiqiy talabalar bilan soxta talabalarni birlashtiramiz
+    const realStudents = (studentData || []) as Profile[]
+    const fakeStudents = generateFakeProfiles(108)
+    const allStudents = [...realStudents, ...fakeStudents].sort((a, b) => 
+      (a.group_name || '').localeCompare(b.group_name || '')
+    )
+
+    setStudents(allStudents)
     setQuizResults((quizData || []) as QuizResultRow[])
     setPracticeResults((practiceData || []) as PracticeResultRow[])
     setLoading(false)
