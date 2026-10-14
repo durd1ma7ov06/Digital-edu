@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { BookOpen, ClipboardList, Edit, FileText, GraduationCap, Plus, Save, Search, ShieldCheck, Trash2, UserCheck, Users } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { googleSheetsDb } from '../lib/googleSheetsDb'
 import { useAuthStore, type Profile, type UserRole } from '../store/useAuthStore'
 import { useRoleRequestStore } from '../store/useRoleRequestStore'
 import { useI18nStore } from '../store/useI18nStore'
@@ -349,37 +349,35 @@ export default function AdminPanel() {
 
   const fetchUsers = async () => {
     setLoading(true)
-    const { data, error: fetchError } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    if (!fetchError) setUsers((data || []) as Profile[])
-    setLoading(false)
+    try {
+      const data = await googleSheetsDb.getUsers()
+      setUsers(data || [])
+    } catch (err) {
+      console.error('Fetch users error:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const fetchContent = async (type: ContentType) => {
     setLoading(true)
-    const { data, error: fetchError } = await supabase
-      .from('content_items')
-      .select('*')
-      .eq('content_type', type)
-      .order('updated_at', { ascending: false })
-
-    if (!fetchError) setContentItems((data || []) as ContentItem[])
-    setLoading(false)
+    try {
+      const data = await googleSheetsDb.getContentItems(type)
+      setContentItems(data || [])
+    } catch (err) {
+      console.error('Fetch content error:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const updateRole = async (userId: string, newRole: Exclude<UserRole, 'admin'>) => {
     setError('')
     setMessage('')
-    const { error: rpcError } = await supabase.rpc('set_user_role', {
-      p_user_id: userId,
-      p_role: newRole,
-    })
+    const res = await googleSheetsDb.setUserRole(userId, newRole)
 
-    if (rpcError) {
-      setError(rpcError.message)
+    if (!res.success) {
+      setError(res.error || 'Rolni o\'zgartirishda xatolik')
       return
     }
 
@@ -435,12 +433,12 @@ export default function AdminPanel() {
         updated_at: new Date().toISOString(),
       }
 
-      const request = form.editingId
-        ? supabase.from('content_items').update(payload).eq('id', form.editingId)
-        : supabase.from('content_items').insert(payload)
+      const res = await googleSheetsDb.saveContentItem({
+        id: form.editingId || undefined,
+        ...payload,
+      })
 
-      const { error: saveError } = await request
-      if (saveError) throw saveError
+      if (!res.success) throw new Error(res.error || L.saveError)
 
       setMessage(form.editingId ? L.contentUpdated : L.contentAdded)
       setForm(emptyForm)
@@ -453,13 +451,10 @@ export default function AdminPanel() {
   const deleteContent = async (item: ContentItem) => {
     if (!window.confirm(`${item.title} ${L.deleteConfirm}`)) return
 
-    const { error: deleteError } = await supabase
-      .from('content_items')
-      .delete()
-      .eq('id', item.id)
+    const res = await googleSheetsDb.deleteContentItem(item.id)
 
-    if (deleteError) {
-      setError(deleteError.message)
+    if (!res.success) {
+      setError(res.error || 'O\'chirishda xatolik yuz berdi')
       return
     }
 

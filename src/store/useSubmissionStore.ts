@@ -1,21 +1,20 @@
-import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
-import { validatePracticeFile } from '../utils/fileValidation';
-import type { Submission, SubmissionWithProfile, SubmissionWithContent, GradingFilters } from '../types/submission';
-
-const BUCKET_NAME = 'practice-files';
+import { create } from 'zustand'
+import { googleSheetsDb } from '../lib/googleSheetsDb'
+import { validatePracticeFile } from '../utils/fileValidation'
+import { useAuthStore } from './useAuthStore'
+import type { SubmissionWithProfile, SubmissionWithContent, GradingFilters } from '../types/submission'
 
 interface SubmissionState {
-  submissions: SubmissionWithProfile[];
-  mySubmissions: SubmissionWithContent[];
-  loading: boolean;
-  filters: GradingFilters;
+  submissions: SubmissionWithProfile[]
+  mySubmissions: SubmissionWithContent[]
+  loading: boolean
+  filters: GradingFilters
 
-  fetchAllSubmissions: () => Promise<void>;
-  fetchMySubmissions: () => Promise<void>;
-  setFilters: (filters: Partial<GradingFilters>) => void;
-  uploadFile: (file: File, contentItemId: string) => Promise<{ error: string | null }>;
-  gradeSubmission: (submissionId: string, score: number, feedback: string) => Promise<{ error: string | null }>;
+  fetchAllSubmissions: () => Promise<void>
+  fetchMySubmissions: () => Promise<void>
+  setFilters: (filters: Partial<GradingFilters>) => void
+  uploadFile: (file: File, contentItemId: string) => Promise<{ error: string | null }>
+  gradeSubmission: (submissionId: string, score: number, feedback: string) => Promise<{ error: string | null }>
 }
 
 export const useSubmissionStore = create<SubmissionState>()((set, get) => ({
@@ -29,182 +28,79 @@ export const useSubmissionStore = create<SubmissionState>()((set, get) => ({
   },
 
   fetchAllSubmissions: async () => {
-    set({ loading: true });
+    set({ loading: true })
     try {
-      let query = supabase
-        .from('submissions')
-        .select(`
-          *,
-          profiles:user_id (full_name, group_name, avatar_emoji),
-          content_items:content_item_id (title, topic_id)
-        `)
-        .order('created_at', { ascending: false });
-
-      const { filters } = get();
-
-      if (filters.status !== 'all') {
-        query = query.eq('status', filters.status);
-      }
-      if (filters.contentItemId) {
-        query = query.eq('content_item_id', filters.contentItemId);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Fetch submissions error:', error);
-        return;
-      }
-
-      let results = (data || []) as SubmissionWithProfile[];
-
-      // Client-side group filtering (since group_name is on the joined profile)
-      if (filters.group) {
-        results = results.filter(
-          (s) => s.profiles?.group_name === filters.group
-        );
-      }
-
-      set({ submissions: results });
+      const { filters } = get()
+      const data = await googleSheetsDb.getSubmissions(filters)
+      set({ submissions: data })
+    } catch (err) {
+      console.error('Fetch submissions error:', err)
     } finally {
-      set({ loading: false });
+      set({ loading: false })
     }
   },
 
   fetchMySubmissions: async () => {
-    set({ loading: true });
+    set({ loading: true })
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const user = useAuthStore.getState().user
+      if (!user) return
 
-      const { data, error } = await supabase
-        .from('submissions')
-        .select(`
-          *,
-          content_items:content_item_id (title, topic_id)
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Fetch my submissions error:', error);
-        return;
-      }
-
-      set({ mySubmissions: (data || []) as unknown as SubmissionWithContent[] });
+      const data = await googleSheetsDb.getMySubmissions(user.id)
+      set({ mySubmissions: data as SubmissionWithContent[] })
+    } catch (err) {
+      console.error('Fetch my submissions error:', err)
     } finally {
-      set({ loading: false });
+      set({ loading: false })
     }
   },
 
   setFilters: (newFilters) => {
     set((state) => ({
       filters: { ...state.filters, ...newFilters },
-    }));
+    }))
   },
 
   uploadFile: async (file: File, contentItemId: string) => {
-    // Validate the file
-    const validation = validatePracticeFile(file);
+    const validation = validatePracticeFile(file)
     if (!validation.valid) {
-      return { error: validation.error || 'Invalid file' };
+      return { error: validation.error || 'Noto\'g\'ri fayl' }
     }
 
-    set({ loading: true });
+    set({ loading: true })
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return { error: 'User not authenticated' };
+      const user = useAuthStore.getState().user
+      if (!user) return { error: 'Foydalanuvchi tizimga kirmagan' }
 
-      const filePath = `${user.id}/${contentItemId}/${file.name}`;
-
-      // Check if there's an existing submission for this content item
-      const { data: existing } = await supabase
-        .from('submissions')
-        .select('id, file_path')
-        .eq('user_id', user.id)
-        .eq('content_item_id', contentItemId)
-        .maybeSingle();
-
-      // If existing, delete old file from storage
-      if (existing?.file_path) {
-        await supabase.storage.from(BUCKET_NAME).remove([existing.file_path]);
+      const res = await googleSheetsDb.uploadSubmission(user.id, contentItemId, file)
+      if (!res.success) {
+        return { error: res.error || 'Yuklashda xatolik yuz berdi' }
       }
 
-      // Upload new file
-      const { error: uploadError } = await supabase.storage
-        .from(BUCKET_NAME)
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) {
-        return { error: uploadError.message };
-      }
-
-      // Upsert submission record
-      if (existing) {
-        const { error: updateError } = await supabase
-          .from('submissions')
-          .update({
-            file_path: filePath,
-            file_name: file.name,
-            file_size: file.size,
-            status: 'pending',
-            score: null,
-            feedback: null,
-            graded_by: null,
-            graded_at: null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', existing.id);
-
-        if (updateError) {
-          return { error: updateError.message };
-        }
-      } else {
-        const { error: insertError } = await supabase
-          .from('submissions')
-          .insert({
-            user_id: user.id,
-            content_item_id: contentItemId,
-            file_path: filePath,
-            file_name: file.name,
-            file_size: file.size,
-            status: 'pending',
-          });
-
-        if (insertError) {
-          return { error: insertError.message };
-        }
-      }
-
-      return { error: null };
+      await get().fetchMySubmissions()
+      return { error: null }
     } catch (err) {
-      return { error: err instanceof Error ? err.message : 'Upload failed' };
+      return { error: err instanceof Error ? err.message : 'Yuklashda xatolik yuz berdi' }
     } finally {
-      set({ loading: false });
+      set({ loading: false })
     }
   },
 
   gradeSubmission: async (submissionId: string, score: number, feedback: string) => {
-    set({ loading: true });
+    set({ loading: true })
     try {
-      const { error } = await supabase.rpc('grade_submission', {
-        p_submission_id: submissionId,
-        p_score: score,
-        p_feedback: feedback || null,
-      });
-
-      if (error) {
-        return { error: error.message };
+      const user = useAuthStore.getState().user
+      const res = await googleSheetsDb.gradeSubmission(submissionId, score, feedback, user?.id || '')
+      if (!res.success) {
+        return { error: res.error || 'Baholashda xatolik yuz berdi' }
       }
 
-      // Refresh submissions list after grading
-      await get().fetchAllSubmissions();
-
-      return { error: null };
+      await get().fetchAllSubmissions()
+      return { error: null }
     } catch (err) {
-      return { error: err instanceof Error ? err.message : 'Grading failed' };
+      return { error: err instanceof Error ? err.message : 'Baholashda xatolik yuz berdi' }
     } finally {
-      set({ loading: false });
+      set({ loading: false })
     }
   },
-}));
+}))

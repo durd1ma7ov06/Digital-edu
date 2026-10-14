@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import mammoth from 'mammoth'
 import { Eye, EyeOff, FileText, Loader2, AlertTriangle, RefreshCcw, FileCheck } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { googleSheetsDb } from '../lib/googleSheetsDb'
 import { useI18nStore } from '../store/useI18nStore'
 import { generateAcademicHTML } from '../utils/documentGenerator'
 
@@ -98,14 +98,25 @@ export function DocumentPreview({
     setIsGenerated(false)
 
     try {
-      // 1. Try to download from Supabase storage
-      const { data, error: downloadError } = await supabase.storage
-        .from('practice-files')
-        .download(filePath)
+      let arrayBuffer: ArrayBuffer | null = null
+      try {
+        const res = await googleSheetsDb.downloadFile(filePath)
+        if (res.success && res.data?.fileData && res.data.fileData.startsWith('data:')) {
+          const base64 = res.data.fileData.split(',')[1]
+          if (base64) {
+            const binaryString = window.atob(base64)
+            const bytes = new Uint8Array(binaryString.length)
+            for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i)
+            }
+            arrayBuffer = bytes.buffer
+          }
+        }
+      } catch (e) {
+        console.warn('Google Sheets download error:', e)
+      }
 
-      if (downloadError || !data) {
-        console.warn('Storage download failed, falling back to generated document:', downloadError)
-        // Fallback: Generate professional 4-page document
+      if (!arrayBuffer) {
         const generated = generateAcademicHTML(
           {
             title: topicTitle,

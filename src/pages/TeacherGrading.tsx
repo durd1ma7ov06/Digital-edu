@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { ClipboardCheck, Download, FileText, GraduationCap, RefreshCcw } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { googleSheetsDb } from '../lib/googleSheetsDb'
 import { useAuthStore } from '../store/useAuthStore'
 import { useSubmissionStore } from '../store/useSubmissionStore'
 import { useI18nStore } from '../store/useI18nStore'
@@ -133,15 +132,23 @@ export default function TeacherGrading() {
   const handleDownloadFile = async (submission: SubmissionWithProfile) => {
     setDownloadingId(submission.id)
     try {
-      const { data, error } = await supabase.storage
-        .from('practice-files')
-        .createSignedUrl(submission.file_path, 300) // 5 min expiry
-
-      if (error || !data?.signedUrl) {
-        throw new Error(error?.message || 'Signed URL generation failed')
+      const res = await googleSheetsDb.downloadFile(submission.id)
+      if (res.success && res.data?.fileData) {
+        const fileData = res.data.fileData
+        if (fileData.startsWith('data:')) {
+          const link = document.createElement('a')
+          link.href = fileData
+          link.download = res.data.fileName || submission.file_name || 'topshiriq.docx'
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          return
+        } else if (fileData.startsWith('http')) {
+          window.open(fileData, '_blank')
+          return
+        }
       }
-
-      window.open(data.signedUrl, '_blank')
+      throw new Error('No direct stream')
     } catch (err) {
       console.warn('Storage download failed, generating 4-page academic document on the fly:', err)
       try {

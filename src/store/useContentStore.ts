@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { supabase } from '../lib/supabase'
+import { googleSheetsDb } from '../lib/googleSheetsDb'
 
 export type ContentType = 'material' | 'test' | 'practice'
 export type ContentStatus = 'draft' | 'published'
@@ -52,38 +52,26 @@ export const useContentStore = create<ContentState>()((set, get) => ({
 
   fetchPublishedContent: async () => {
     set({ loading: true })
-    const { data, error } = await supabase
-      .from('content_items')
-      .select('*')
-      .eq('status', 'published')
-      .order('created_at', { ascending: false })
-
-    if (error) {
-      console.error('Content fetch error:', error)
+    try {
+      const items = await googleSheetsDb.getContentItems(undefined, 'published')
+      set({ items, loading: false })
+      return items
+    } catch (err) {
+      console.error('Content fetch error:', err)
       set({ loading: false })
       return get().items
     }
-
-    const items = (data || []) as ContentItem[]
-    set({ items, loading: false })
-    return items
   },
 
   fetchContentItem: async (id) => {
     const cached = get().items.find((item) => item.id === id)
     if (cached) return cached
 
-    const { data, error } = await supabase
-      .from('content_items')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle()
-
-    if (error) {
-      console.error('Content item fetch error:', error)
+    try {
+      return await googleSheetsDb.getContentItem(id)
+    } catch (err) {
+      console.error('Content item fetch error:', err)
       return null
     }
-
-    return (data as ContentItem | null) || null
   },
 }))

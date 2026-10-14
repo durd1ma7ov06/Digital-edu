@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { saveAs } from 'file-saver';
-import { Download, FileDown, Loader2 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { googleSheetsDb } from '../lib/googleSheetsDb';
 import type { SubmissionWithContent } from '../types/submission';
 import { useI18nStore } from '../store/useI18nStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -85,16 +84,23 @@ const SubmissionCard: React.FC<SubmissionCardProps> = ({ submission }) => {
   const handleDownloadFile = async () => {
     setDownloadingFile(true);
     try {
-      // 1. Try to download from storage
-      const { data, error } = await supabase.storage
-        .from('practice-files')
-        .createSignedUrl(submission.file_path, 300);
-
-      if (error || !data?.signedUrl) {
-        throw new Error(error?.message || 'Signed URL failed');
+      const res = await googleSheetsDb.downloadFile(submission.id);
+      if (res.success && res.data?.fileData) {
+        const fileData = res.data.fileData;
+        if (fileData.startsWith('data:')) {
+          const link = document.createElement('a');
+          link.href = fileData;
+          link.download = res.data.fileName || submission.file_name || 'topshiriq.docx';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          return;
+        } else if (fileData.startsWith('http')) {
+          window.open(fileData, '_blank');
+          return;
+        }
       }
-
-      window.open(data.signedUrl, '_blank');
+      throw new Error('No direct stream');
     } catch (err) {
       console.warn('Storage download failed, falling back to client-generated docx:', err);
       // Fallback: Generate the 4-page academic docx

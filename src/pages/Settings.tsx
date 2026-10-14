@@ -5,8 +5,9 @@ import {
   RotateCcw, AlertTriangle, Globe, User, Palette, Volume2, VolumeX,
   Sun, Moon, Monitor, Bell, BellOff, Shield, Info, Zap, BookOpen,
   Trophy, Target, ChevronRight, Sparkles, Heart, Camera, Trash2, ImagePlus,
-  GraduationCap
+  GraduationCap, Table, ExternalLink, CheckCircle2, RefreshCw
 } from 'lucide-react'
+import { googleSheetsDb, SPREADSHEET_URL } from '../lib/googleSheetsDb'
 import { useAppStore } from '../store/useAppStore'
 import { useI18nStore } from '../store/useI18nStore'
 import { useAuthStore } from '../store/useAuthStore'
@@ -111,6 +112,26 @@ export default function Settings() {
       fetchMyRequest()
     }
   }, [profile?.role])
+
+  const [pingStatus, setPingStatus] = useState<string | null>(null)
+  const [testingConnection, setTestingConnection] = useState(false)
+
+  const handleTestConnection = async () => {
+    setTestingConnection(true)
+    setPingStatus(null)
+    try {
+      const res = await googleSheetsDb.ping()
+      if (res.success) {
+        setPingStatus(language === 'uz' ? '🟢 Baza muvaffaqiyatli ulangan!' : '🟢 База данных подключена!')
+      } else {
+        setPingStatus(`🔴 Xatolik: ${res.error}`)
+      }
+    } catch (e: any) {
+      setPingStatus(`🔴 Xatolik: ${e.message}`)
+    } finally {
+      setTestingConnection(false)
+    }
+  }
 
   const totalTopics = curriculum.length
   const avgScore = quizResults.length > 0
@@ -433,6 +454,64 @@ export default function Settings() {
             </div>
           </div>
         )}
+      </Section>
+
+      {/* ─── GOOGLE SHEETS DATABASE ─── */}
+      <Section title={language === 'uz' ? "Google Sheets Ma'lumotlar Bazasi" : language === 'ru' ? 'База данных Google Таблицы' : 'Google Sheets Database'} icon={Table} delay={0.19} color="#10b981">
+        <div className="space-y-3">
+          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-white/50">{language === 'uz' ? 'Holati:' : 'Статус:'}</span>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
+                <CheckCircle2 size={12} /> {language === 'uz' ? 'Jonli ulangan' : 'Подключено онлайн'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-white/50">{language === 'uz' ? 'Jadval:' : 'Таблица:'}</span>
+              <a
+                href={SPREADSHEET_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-mono"
+              >
+                Digital Edu <ExternalLink size={12} />
+              </a>
+            </div>
+            <div className="text-[11px] text-white/40 pt-1 border-t border-white/5">
+              {language === 'uz'
+                ? "Barcha ro'yxatdan o'tishlar, testlar, amaliyotlar va baholar ushbu Google Sheets jadvalida saqlanadi."
+                : "Все пользователи, результаты тестов, заданий и оценки сохраняются в этой Google Таблице."}
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <motion.button
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              onClick={handleTestConnection}
+              disabled={testingConnection}
+              className="flex-1 py-2.5 px-3 rounded-xl text-xs font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-2"
+            >
+              <RefreshCw size={13} className={testingConnection ? 'animate-spin' : ''} />
+              <span>{testingConnection ? 'Tekshirilmoqda...' : (language === 'uz' ? 'Aloqani tekshirish' : 'Проверить связь')}</span>
+            </motion.button>
+            <a
+              href={SPREADSHEET_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="py-2.5 px-3 rounded-xl text-xs font-semibold bg-white/5 text-white/70 border border-white/10 hover:bg-white/10 transition-all flex items-center gap-1.5"
+            >
+              <ExternalLink size={13} />
+              <span>{language === 'uz' ? 'Ochish' : 'Открыть'}</span>
+            </a>
+          </div>
+
+          {pingStatus && (
+            <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-xs text-white/70 px-1 font-medium">
+              {pingStatus}
+            </motion.p>
+          )}
+        </div>
       </Section>
 
       {/* ─── ABOUT ─── */}

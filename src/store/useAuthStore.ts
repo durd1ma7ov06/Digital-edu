@@ -1,6 +1,5 @@
 import { create } from 'zustand'
-import type { User } from '@supabase/supabase-js'
-import { supabase } from '../lib/supabase'
+import { googleSheetsDb } from '../lib/googleSheetsDb'
 
 export type UserRole = 'admin' | 'teacher' | 'student'
 
@@ -17,6 +16,11 @@ export interface Profile {
   diagnostic_completed_at: string | null
   created_at: string
   updated_at: string
+}
+
+export interface UserSession {
+  id: string
+  email: string
 }
 
 export interface LeaderboardEntry {
@@ -36,7 +40,7 @@ export interface LeaderboardEntry {
 }
 
 interface AuthState {
-  user: User | null
+  user: UserSession | null
   profile: Profile | null
   loading: boolean
   initialized: boolean
@@ -52,28 +56,7 @@ interface AuthState {
   fetchLeaderboard: () => Promise<LeaderboardEntry[]>
 }
 
-function usernameFromEmail(email: string) {
-  return email
-    .split('@')[0]
-    .toLowerCase()
-    .replace(/[^a-z0-9_]+/g, '_')
-    .replace(/^_+|_+$/g, '') || 'student'
-}
-
-// Profilni olib keladi va qaytaradi (state'ni o'zgartirmaydi)
-async function loadProfile(userId: string): Promise<Profile | null> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .maybeSingle()
-
-  if (error) {
-    console.error('[loadProfile] error:', error.message)
-    return null
-  }
-  return (data as Profile | null) || null
-}
+const SESSION_KEY = 'digitaledu_auth_session'
 
 export const useAuthStore = create<AuthState>()((set, get) => ({
   user: null,
@@ -83,25 +66,25 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
   initialize: async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const stored = localStorage.getItem(SESSION_KEY)
+      if (stored) {
+        const session = JSON.parse(stored) as { user: UserSession; profile: Profile }
+        set({ user: session.user, profile: session.profile })
 
-      if (session?.user) {
-        const profile = await loadProfile(session.user.id)
-        set({ user: session.user, profile })
+        // Refresh profile from Google Sheets in background
+        const res = await googleSheetsDb.getProfile(session.user.id)
+        if (res.success && res.data?.profile) {
+          set({ profile: res.data.profile })
+          localStorage.setItem(
+            SESSION_KEY,
+            JSON.stringify({ user: session.user, profile: res.data.profile })
+          )
+        }
       } else {
         set({ user: null, profile: null })
       }
-
-      // Faqat tashqi o'zgarishlarni kuzatish (signIn/signOut o'zi state'ni boshqaradi)
-      supabase.auth.onAuthStateChange(async (event, session) => {
-        if (event === 'SIGNED_OUT') {
-          set({ user: null, profile: null })
-        } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-          set({ user: session.user })
-        }
-      })
     } catch (err) {
-      console.error('Auth init error:', err)
+      console.error('Auth initialize error:', err)
       set({ user: null, profile: null })
     } finally {
       set({ loading: false, initialized: true })
@@ -111,27 +94,13 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   signUp: async (email, password, fullName, groupName = '') => {
     set({ loading: true })
     try {
-      const cleanEmail = email.trim().toLowerCase()
-      const { error } = await supabase.auth.signUp({
-        email: cleanEmail,
-        password,
-        options: {
-          data: {
-            username: usernameFromEmail(cleanEmail),
-            full_name: fullName.trim(),
-            group_name: groupName.trim(),
-            avatar_emoji: '🎯',
-          },
-        },
-      })
-
-      if (error) {
+      const res = await googleSheetsDb.signUp(email, password, fullName, groupName, 'student')
+      if (!res.success || !res.data) {
         set({ loading: false })
-        return { error: error.message }
+        return { error: res.error || 'Ro\'yxatdan o\'tishda xatolik yuz berdi' }
       }
 
-      await supabase.auth.signOut()
-      set({ user: null, profile: null, loading: false })
+      set({ loading: false })
       return { error: null }
     } catch (err) {
       set({ loading: false })
@@ -142,37 +111,32 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   signIn: async (email, password) => {
     set({ loading: true })
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
-      })
-
-      if (error) {
+      const res = await googleSheetsDb.signIn(email, password)
+      if (!res.success || !res.data) {
         set({ loading: false })
-        return { error: error.message }
+        return { error: res.error || 'Email yoki parol xato' }
       }
 
-      // Profilni yuklash
-      const profile = await loadProfile(data.user.id)
+      const { user, profile } = res.data
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ user, profile }))
 
-      // State'ni to'liq o'rnatish
-      set({ user: data.user, profile, loading: false, initialized: true })
+      set({ user, profile, loading: false, initialized: true })
 
-      // To'g'ri sahifaga to'liq reload bilan o'tish (session localStorage'da saqlangan)
-      const target = profile?.role === 'admin' ? '/admin'
-                   : profile?.role === 'teacher' ? '/teacher'
+      // Yo'naltirish
+      const target = profile.role === 'admin' ? '/admin'
+                   : profile.role === 'teacher' ? '/teacher'
                    : '/'
       window.location.assign(target)
 
       return { error: null }
     } catch (err) {
       set({ loading: false })
-      return { error: err instanceof Error ? err.message : 'Xatolik yuz berdi' }
+      return { error: err instanceof Error ? err.message : 'Kirishda xatolik yuz berdi' }
     }
   },
 
   signOut: async () => {
-    await supabase.auth.signOut()
+    localStorage.removeItem(SESSION_KEY)
     set({ user: null, profile: null, loading: false, initialized: true })
     window.location.assign('/auth')
   },
@@ -180,96 +144,60 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   fetchProfile: async () => {
     const { user } = get()
     if (!user) return
-    const profile = await loadProfile(user.id)
-    if (profile) {
-      set({ profile })
+    const res = await googleSheetsDb.getProfile(user.id)
+    if (res.success && res.data?.profile) {
+      set({ profile: res.data.profile })
+      localStorage.setItem(
+        SESSION_KEY,
+        JSON.stringify({ user, profile: res.data.profile })
+      )
     }
   },
 
   updateProfile: async (updates) => {
-    const { user } = get()
-    if (!user) return
+    const { user, profile } = get()
+    if (!user || !profile) return
 
-    const { error } = await supabase.rpc('update_own_profile', {
-      p_full_name: updates.full_name ?? null,
-      p_group_name: updates.group_name ?? null,
-      p_avatar_emoji: updates.avatar_emoji ?? null,
-    })
-
-    if (error) {
-      console.error('Profile update error:', error)
-      return
+    const res = await googleSheetsDb.updateProfile(user.id, updates)
+    if (res.success) {
+      const updatedProfile = { ...profile, ...updates, updated_at: new Date().toISOString() }
+      set({ profile: updatedProfile })
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ user, profile: updatedProfile }))
     }
-
-    await get().fetchProfile()
   },
 
   completeDiagnostic: async (score, total, answers = []) => {
-    const { error } = await supabase.rpc('complete_diagnostic', {
-      p_score: score,
-      p_total: total,
-      p_answers: answers,
-    })
+    const { user, profile } = get()
+    if (!user || !profile) return
 
-    if (error) {
-      console.error('Diagnostic save error:', error)
-      return
+    const res = await googleSheetsDb.completeDiagnostic(user.id, score, total, answers)
+    if (res.success) {
+      const updatedProfile: Profile = {
+        ...profile,
+        diagnostic_completed: true,
+        diagnostic_score: score,
+        diagnostic_total: total,
+        diagnostic_completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+      set({ profile: updatedProfile })
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ user, profile: updatedProfile }))
     }
-
-    await get().fetchProfile()
   },
 
   saveQuizResult: async (topicId, partId, score, totalQuestions, contentItemId = null) => {
     const { user } = get()
     if (!user) return
-
-    const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0
-    const xpEarned = score * 10
-
-    const { error } = await supabase.from('quiz_results').insert({
-      user_id: user.id,
-      topic_id: topicId,
-      content_item_id: contentItemId,
-      part_id: partId,
-      score,
-      total_questions: totalQuestions,
-      percentage,
-      xp_earned: xpEarned,
-    })
-
-    if (error) console.error('Quiz result save error:', error)
+    await googleSheetsDb.saveQuizResult(user.id, topicId, partId, score, totalQuestions, contentItemId)
   },
 
   savePracticeResult: async (topicId, score, maxScore, contentItemId = null) => {
     const { user } = get()
     if (!user) return
-
-    const xpEarned = maxScore > 0 ? Math.round((score / maxScore) * 50) : 0
-
-    const { error } = await supabase.from('practice_results').insert({
-      user_id: user.id,
-      topic_id: topicId,
-      content_item_id: contentItemId,
-      score,
-      max_score: maxScore,
-      xp_earned: xpEarned,
-    })
-
-    if (error) console.error('Practice result save error:', error)
+    await googleSheetsDb.savePracticeResult(user.id, topicId, score, maxScore, contentItemId)
   },
 
   fetchLeaderboard: async () => {
-    const { data, error } = await supabase
-      .from('leaderboard_view')
-      .select('*')
-      .order('total_xp', { ascending: false })
-      .limit(100)
-
-    if (error) {
-      console.error('Leaderboard fetch error:', error)
-      return []
-    }
-
-    return (data || []) as LeaderboardEntry[]
+    return googleSheetsDb.getLeaderboard()
   },
 }))

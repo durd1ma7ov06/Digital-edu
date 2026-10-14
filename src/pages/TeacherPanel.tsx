@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { BarChart3, CheckCircle2, ClipboardCheck, Clock, GraduationCap, RefreshCcw, Search, Target, Users } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { googleSheetsDb } from '../lib/googleSheetsDb'
 import { useAuthStore, type Profile } from '../store/useAuthStore'
 import { useSubmissionStore } from '../store/useSubmissionStore'
 import { useI18nStore } from '../store/useI18nStore'
@@ -160,36 +160,23 @@ export default function TeacherPanel() {
 
   const fetchTeacherData = async () => {
     setLoading(true)
+    try {
+      const data = await googleSheetsDb.getTeacherData()
 
-    const [{ data: studentData }, { data: quizData }, { data: practiceData }] = await Promise.all([
-      supabase
-        .from('profiles')
-        .select('*')
-        .eq('role', 'student')
-        .order('group_name', { ascending: true }),
-      supabase
-        .from('quiz_results')
-        .select('*, profiles(full_name, group_name, avatar_emoji), content_items(title)')
-        .order('completed_at', { ascending: false })
-        .limit(200),
-      supabase
-        .from('practice_results')
-        .select('*, content_items(title)')
-        .order('completed_at', { ascending: false })
-        .limit(200),
-    ])
+      const realStudents = (data.students || []) as Profile[]
+      const fakeStudents = generateFakeProfiles(108)
+      const allStudents = [...realStudents, ...fakeStudents].sort((a, b) => 
+        (a.group_name || '').localeCompare(b.group_name || '')
+      )
 
-    // Haqiqiy talabalar bilan soxta talabalarni birlashtiramiz
-    const realStudents = (studentData || []) as Profile[]
-    const fakeStudents = generateFakeProfiles(108)
-    const allStudents = [...realStudents, ...fakeStudents].sort((a, b) => 
-      (a.group_name || '').localeCompare(b.group_name || '')
-    )
-
-    setStudents(allStudents)
-    setQuizResults((quizData || []) as QuizResultRow[])
-    setPracticeResults((practiceData || []) as PracticeResultRow[])
-    setLoading(false)
+      setStudents(allStudents)
+      setQuizResults((data.quizResults || []) as QuizResultRow[])
+      setPracticeResults((data.practiceResults || []) as PracticeResultRow[])
+    } catch (err) {
+      console.error('Fetch teacher data error:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const studentRows = useMemo(() => {
