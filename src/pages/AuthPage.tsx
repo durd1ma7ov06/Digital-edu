@@ -146,10 +146,13 @@ export default function AuthPage() {
         setError(result.error)
       } else {
         setSuccess(L.registerSuccess)
+        const profile = useAuthStore.getState().profile
+        const target = profile?.role === 'admin' ? '/admin'
+                     : profile?.role === 'teacher' ? '/teacher'
+                     : '/'
         setTimeout(() => {
-          setMode('login')
-          setPassword('')
-        }, 2000)
+          navigate(target, { replace: true })
+        }, 1200)
       }
     }
 

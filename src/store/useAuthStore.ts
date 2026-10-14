@@ -118,7 +118,10 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         return { error: res.error || 'Ro\'yxatdan o\'tishda xatolik yuz berdi' }
       }
 
-      set({ loading: false })
+      const { user, profile } = res.data
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ user, profile }))
+      set({ user, profile, loading: false, initialized: true })
+
       return { error: null }
     } catch (err) {
       set({ loading: false })
