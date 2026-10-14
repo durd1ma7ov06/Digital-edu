@@ -7,6 +7,7 @@ import { useAuthStore, type Profile, type UserRole } from '../store/useAuthStore
 import { useRoleRequestStore } from '../store/useRoleRequestStore'
 import { useI18nStore } from '../store/useI18nStore'
 import { translateToAll, translateArrayToAll, type Lang } from '../utils/translate'
+import { getRoleEmoji } from '../utils/sanitizeEmoji'
 import type { ContentItem, ContentType } from '../store/useContentStore'
 
 const labels = {
@@ -582,7 +583,7 @@ export default function AdminPanel() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-400/15 flex items-center justify-center text-lg">
-                            {item.avatar_emoji || '🎯'}
+                            {getRoleEmoji(item.role, item.avatar_emoji)}
                           </div>
                           <div>
                             <div className="text-white font-bold text-sm">{item.full_name || L.unnamed}</div>

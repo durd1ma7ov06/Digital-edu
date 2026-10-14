@@ -4,6 +4,7 @@ import { Crown, Medal, TrendingUp, RefreshCw, Trophy, Users } from 'lucide-react
 import { useAuthStore, type LeaderboardEntry } from '../store/useAuthStore'
 import { useI18nStore } from '../store/useI18nStore'
 import { generateFakeStudents } from '../data/fakeStudents'
+import { sanitizeEmoji } from '../utils/sanitizeEmoji'
 
 export default function Leaderboard() {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
@@ -16,8 +17,7 @@ export default function Leaderboard() {
   const loadData = async () => {
     setLoading(true)
     const data = await fetchLeaderboard()
-    // Ko'rinish uchun soxta talabalarni qo'shamiz va XP bo'yicha qayta saralaymiz.
-    const merged = [...data, ...generateFakeStudents(108)].sort(
+    const merged = (data.length >= 50 ? data : [...data, ...generateFakeStudents(108)]).sort(
       (a, b) => b.total_xp - a.total_xp
     )
     setEntries(merged)
@@ -95,7 +95,7 @@ export default function Leaderboard() {
               >
                 <div className="text-center mb-4">
                   <div className="relative inline-block">
-                    <div className="text-4xl mb-2">{entries[1].avatar_emoji}</div>
+                    <div className="text-4xl mb-2">{sanitizeEmoji(entries[1].avatar_emoji, '🥈')}</div>
                     <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-slate-300 flex items-center justify-center text-[10px] font-bold text-slate-800 shadow-lg border-2 border-slate-400">2</div>
                   </div>
                   <p className="text-sm font-bold text-white/80 truncate px-2">{entries[1].full_name}</p>
@@ -122,7 +122,7 @@ export default function Leaderboard() {
                       transition={{ duration: 3, repeat: Infinity }}
                       className="text-6xl mb-2"
                     >
-                      {entries[0].avatar_emoji}
+                      {sanitizeEmoji(entries[0].avatar_emoji, '👑')}
                     </motion.div>
                     <div className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-yellow-400 flex items-center justify-center text-sm font-black text-yellow-900 shadow-[0_0_20px_rgba(250,204,21,0.5)] border-4 border-yellow-500">1</div>
                     <Crown className="absolute -top-8 left-1/2 -translate-x-1/2 text-yellow-400 w-8 h-8 drop-shadow-glow" />
@@ -147,7 +147,7 @@ export default function Leaderboard() {
               >
                 <div className="text-center mb-4">
                   <div className="relative inline-block">
-                    <div className="text-4xl mb-2">{entries[2].avatar_emoji}</div>
+                    <div className="text-4xl mb-2">{sanitizeEmoji(entries[2].avatar_emoji, '🥉')}</div>
                     <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-orange-700 flex items-center justify-center text-[10px] font-bold text-white shadow-lg border-2 border-orange-800">3</div>
                   </div>
                   <p className="text-sm font-bold text-white/80 truncate px-2">{entries[2].full_name}</p>
@@ -190,7 +190,7 @@ export default function Leaderboard() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-4">
                           <div className="w-10 h-10 rounded-xl bg-black/40 flex items-center justify-center text-xl shadow-inner border border-white/5 group-hover:scale-110 transition-transform">
-                            {u.avatar_emoji}
+                            {sanitizeEmoji(u.avatar_emoji, '🎯')}
                           </div>
                           <div>
                             <p className={`text-sm font-bold ${u.user_id === user?.id ? 'text-cyan-400' : 'text-white/80'}`}>

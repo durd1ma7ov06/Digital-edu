@@ -2,6 +2,7 @@ import { Globe, LogOut } from 'lucide-react'
 import { useI18nStore } from '../store/useI18nStore'
 import { useAuthStore } from '../store/useAuthStore'
 import { useSettingsStore } from '../store/useSettingsStore'
+import { getRoleEmoji } from '../utils/sanitizeEmoji'
 
 export default function MobileHeader() {
   const { language, setLanguage } = useI18nStore()
@@ -15,7 +16,7 @@ export default function MobileHeader() {
            {profileImage ? (
              <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
            ) : (
-             profile?.avatar_emoji || '🎯'
+             getRoleEmoji(profile?.role, profile?.avatar_emoji)
            )}
          </div>
          <div className="flex flex-col justify-center">

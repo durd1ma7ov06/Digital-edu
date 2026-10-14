@@ -14,6 +14,7 @@ import { useAuthStore } from '../store/useAuthStore'
 import { useSettingsStore } from '../store/useSettingsStore'
 import { useRoleRequestStore } from '../store/useRoleRequestStore'
 import { curriculum } from '../data'
+import { getRoleEmoji } from '../utils/sanitizeEmoji'
 
 /* ─── EMOJI PICKER ─── */
 const EMOJI_OPTIONS = [
@@ -317,7 +318,7 @@ export default function Settings() {
               {profileImage ? (
                 <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
               ) : (
-                <span>{profile?.avatar_emoji || '🎯'}</span>
+                <span>{getRoleEmoji(profile?.role, profile?.avatar_emoji)}</span>
               )}
             </motion.div>
             {/* Camera button */}

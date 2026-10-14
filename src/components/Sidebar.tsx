@@ -6,6 +6,7 @@ import {
 import { useI18nStore } from '../store/useI18nStore'
 import { useAuthStore } from '../store/useAuthStore'
 import { useSettingsStore } from '../store/useSettingsStore'
+import { getRoleEmoji } from '../utils/sanitizeEmoji'
 
 export default function Sidebar() {
   const { t, language, setLanguage } = useI18nStore()
@@ -102,7 +103,7 @@ export default function Sidebar() {
                 {profileImage ? (
                   <img src={profileImage} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  profile?.avatar_emoji || '🎯'
+                  getRoleEmoji(profile?.role, profile?.avatar_emoji)
                 )}
               </div>
               <div>

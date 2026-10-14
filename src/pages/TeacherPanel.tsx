@@ -7,6 +7,7 @@ import { useAuthStore, type Profile } from '../store/useAuthStore'
 import { useSubmissionStore } from '../store/useSubmissionStore'
 import { useI18nStore } from '../store/useI18nStore'
 import { generateFakeProfiles } from '../data/fakeProfiles'
+import { getRoleEmoji } from '../utils/sanitizeEmoji'
 
 const labels = {
   uz: {
@@ -164,7 +165,7 @@ export default function TeacherPanel() {
       const data = await googleSheetsDb.getTeacherData()
 
       const realStudents = (data.students || []) as Profile[]
-      const fakeStudents = generateFakeProfiles(108)
+      const fakeStudents = realStudents.length < 50 ? generateFakeProfiles(108) : []
       const allStudents = [...realStudents, ...fakeStudents].sort((a, b) => 
         (a.group_name || '').localeCompare(b.group_name || '')
       )
@@ -354,8 +355,8 @@ export default function TeacherPanel() {
                     <tr key={row.student.id} className="hover:bg-white/[0.02] transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-400/15 flex items-center justify-center">
-                            {row.student.avatar_emoji || '🎯'}
+                          <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-400/15 flex items-center justify-center text-lg">
+                            {getRoleEmoji('student', row.student.avatar_emoji)}
                           </div>
                           <div>
                             <div className="text-white font-bold text-sm">{row.student.full_name || L.defaultStudent}</div>

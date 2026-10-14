@@ -11,6 +11,7 @@ import { WordExportButton } from '../components/WordExportButton'
 import { generateAcademicDocxBlob } from '../utils/documentGenerator'
 import { saveAs } from 'file-saver'
 import type { SubmissionWithProfile } from '../types/submission'
+import { getRoleEmoji } from '../utils/sanitizeEmoji'
 
 const labels = {
   uz: {
@@ -271,8 +272,8 @@ export default function TeacherGrading() {
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-400/15 flex items-center justify-center">
-                        {submission.profiles?.avatar_emoji || '📄'}
+                      <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-400/15 flex items-center justify-center text-lg">
+                        {getRoleEmoji('student', submission.profiles?.avatar_emoji)}
                       </div>
                       <div>
                         <p className="text-white font-bold text-sm">
@@ -362,7 +363,7 @@ export default function TeacherGrading() {
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-400/15 flex items-center justify-center text-lg">
-                      {selectedSubmission.profiles?.avatar_emoji || '📄'}
+                      {getRoleEmoji('student', selectedSubmission.profiles?.avatar_emoji)}
                     </div>
                     <div>
                       <p className="text-white font-bold">

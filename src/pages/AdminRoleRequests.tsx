@@ -4,6 +4,7 @@ import { CheckCircle, ShieldCheck, XCircle, Clock, UserCheck } from 'lucide-reac
 import { useAuthStore } from '../store/useAuthStore'
 import { useRoleRequestStore } from '../store/useRoleRequestStore'
 import { useI18nStore } from '../store/useI18nStore'
+import { getRoleEmoji } from '../utils/sanitizeEmoji'
 
 const labels = {
   uz: {
@@ -150,7 +151,7 @@ export default function AdminRoleRequests() {
               >
                 <div className="flex items-center gap-4">
                   <div className="w-11 h-11 rounded-xl bg-cyan-500/10 border border-cyan-400/15 flex items-center justify-center text-lg">
-                    {request.profiles?.avatar_emoji || '👤'}
+                    {getRoleEmoji(request.profiles?.role, request.profiles?.avatar_emoji)}
                   </div>
                   <div>
                     <div className="text-white font-bold text-sm">
@@ -204,7 +205,7 @@ export default function AdminRoleRequests() {
               >
                 <div className="flex items-center gap-4">
                   <div className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-lg">
-                    {request.profiles?.avatar_emoji || '👤'}
+                    {getRoleEmoji(request.profiles?.role, request.profiles?.avatar_emoji)}
                   </div>
                   <div>
                     <div className="text-white/70 font-bold text-sm">
