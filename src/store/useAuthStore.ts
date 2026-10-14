@@ -58,36 +58,54 @@ interface AuthState {
 
 const SESSION_KEY = 'digitaledu_auth_session'
 
+function getStoredSession(): { user: UserSession; profile: Profile } | null {
+  try {
+    if (typeof window === 'undefined') return null
+    const stored = localStorage.getItem(SESSION_KEY)
+    if (!stored) return null
+    const session = JSON.parse(stored) as { user: UserSession; profile: Profile }
+    if (session && session.user && session.profile) {
+      return session
+    }
+  } catch (e) {
+    console.warn('Session parse error:', e)
+  }
+  return null
+}
+
+const initialSession = getStoredSession()
+
 export const useAuthStore = create<AuthState>()((set, get) => ({
-  user: null,
-  profile: null,
-  loading: true,
-  initialized: false,
+  user: initialSession?.user || null,
+  profile: initialSession?.profile || null,
+  loading: false,
+  initialized: true,
 
   initialize: async () => {
     try {
-      const stored = localStorage.getItem(SESSION_KEY)
-      if (stored) {
-        const session = JSON.parse(stored) as { user: UserSession; profile: Profile }
-        set({ user: session.user, profile: session.profile })
+      const session = getStoredSession()
+      if (session) {
+        set({ user: session.user, profile: session.profile, loading: false, initialized: true })
 
         // Refresh profile from Google Sheets in background
-        const res = await googleSheetsDb.getProfile(session.user.id)
-        if (res.success && res.data?.profile) {
-          set({ profile: res.data.profile })
-          localStorage.setItem(
-            SESSION_KEY,
-            JSON.stringify({ user: session.user, profile: res.data.profile })
-          )
+        try {
+          const res = await googleSheetsDb.getProfile(session.user.id)
+          if (res.success && res.data?.profile) {
+            set({ profile: res.data.profile })
+            localStorage.setItem(
+              SESSION_KEY,
+              JSON.stringify({ user: session.user, profile: res.data.profile })
+            )
+          }
+        } catch (e) {
+          console.warn('Background profile refresh error:', e)
         }
       } else {
-        set({ user: null, profile: null })
+        set({ user: null, profile: null, loading: false, initialized: true })
       }
     } catch (err) {
       console.error('Auth initialize error:', err)
-      set({ user: null, profile: null })
-    } finally {
-      set({ loading: false, initialized: true })
+      set({ user: null, profile: null, loading: false, initialized: true })
     }
   },
 
@@ -121,12 +139,6 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       localStorage.setItem(SESSION_KEY, JSON.stringify({ user, profile }))
 
       set({ user, profile, loading: false, initialized: true })
-
-      // Yo'naltirish
-      const target = profile.role === 'admin' ? '/admin'
-                   : profile.role === 'teacher' ? '/teacher'
-                   : '/'
-      window.location.assign(target)
 
       return { error: null }
     } catch (err) {

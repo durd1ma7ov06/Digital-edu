@@ -36,9 +36,25 @@ function createResponse(data) {
   return output;
 }
 
-function doGet(e) {
+function handleRequest(e) {
   try {
-    var params = e && e.parameter ? e.parameter : {};
+    var params = {};
+    if (e && e.parameter) {
+      for (var k in e.parameter) {
+        params[k] = e.parameter[k];
+      }
+    }
+    if (e && e.postData && e.postData.contents) {
+      try {
+        var body = JSON.parse(e.postData.contents);
+        for (var b in body) {
+          params[b] = body[b];
+        }
+      } catch (err) {
+        // Fallback for form post
+      }
+    }
+
     var action = params.action || 'ping';
 
     switch (action) {
@@ -51,86 +67,68 @@ function doGet(e) {
         });
       case 'init':
         return createResponse(initDatabase());
+      case 'signIn':
+        return createResponse(signInUser(params));
+      case 'signUp':
+        return createResponse(signUpUser(params));
       case 'getProfile':
         return createResponse(getProfile(params.userId));
+      case 'updateProfile':
+        return createResponse(updateProfile(params));
+      case 'completeDiagnostic':
+        return createResponse(completeDiagnostic(params));
+      case 'saveQuizResult':
+        return createResponse(saveQuizResult(params));
+      case 'savePracticeResult':
+        return createResponse(savePracticeResult(params));
       case 'getLeaderboard':
         return createResponse(getLeaderboard());
       case 'getContentItems':
         return createResponse(getContentItems(params.type, params.status));
       case 'getContentItem':
         return createResponse(getContentItem(params.id));
+      case 'saveContentItem':
+        return createResponse(saveContentItem(params));
+      case 'deleteContentItem':
+        return createResponse(deleteContentItem(params.id));
+      case 'uploadSubmission':
+        return createResponse(uploadSubmission(params));
       case 'getSubmissions':
         return createResponse(getSubmissions(params));
       case 'getMySubmissions':
         return createResponse(getMySubmissions(params.userId));
+      case 'gradeSubmission':
+        return createResponse(gradeSubmission(params));
+      case 'downloadFile':
+        return createResponse(downloadFile(params.submissionId));
+      case 'submitRoleRequest':
+        return createResponse(submitRoleRequest(params));
       case 'getRoleRequests':
         return createResponse(getRoleRequests());
       case 'getMyRoleRequest':
         return createResponse(getMyRoleRequest(params.userId));
+      case 'reviewRoleRequest':
+        return createResponse(reviewRoleRequest(params));
       case 'getUsers':
         return createResponse(getUsers());
+      case 'setUserRole':
+        return createResponse(setUserRole(params));
       case 'getTeacherData':
         return createResponse(getTeacherData());
-      case 'downloadFile':
-        return createResponse(downloadFile(params.submissionId));
       default:
-        return createResponse({ success: false, error: 'Noma\'lum GET amali: ' + action });
+        return createResponse({ success: false, error: 'Noma\'lum amal: ' + action });
     }
   } catch (err) {
     return createResponse({ success: false, error: err.toString() });
   }
 }
 
+function doGet(e) {
+  return handleRequest(e);
+}
+
 function doPost(e) {
-  try {
-    var postData = {};
-    if (e && e.postData && e.postData.contents) {
-      try {
-        postData = JSON.parse(e.postData.contents);
-      } catch (err) {
-        postData = e.parameter || {};
-      }
-    } else if (e && e.parameter) {
-      postData = e.parameter;
-    }
-
-    var action = postData.action || '';
-
-    switch (action) {
-      case 'init':
-        return createResponse(initDatabase());
-      case 'signUp':
-        return createResponse(signUpUser(postData));
-      case 'signIn':
-        return createResponse(signInUser(postData));
-      case 'updateProfile':
-        return createResponse(updateProfile(postData));
-      case 'completeDiagnostic':
-        return createResponse(completeDiagnostic(postData));
-      case 'saveQuizResult':
-        return createResponse(saveQuizResult(postData));
-      case 'savePracticeResult':
-        return createResponse(savePracticeResult(postData));
-      case 'saveContentItem':
-        return createResponse(saveContentItem(postData));
-      case 'deleteContentItem':
-        return createResponse(deleteContentItem(postData.id));
-      case 'uploadSubmission':
-        return createResponse(uploadSubmission(postData));
-      case 'gradeSubmission':
-        return createResponse(gradeSubmission(postData));
-      case 'submitRoleRequest':
-        return createResponse(submitRoleRequest(postData));
-      case 'reviewRoleRequest':
-        return createResponse(reviewRoleRequest(postData));
-      case 'setUserRole':
-        return createResponse(setUserRole(postData));
-      default:
-        return createResponse({ success: false, error: 'Noma\'lum POST amali: ' + action });
-    }
-  } catch (err) {
-    return createResponse({ success: false, error: err.toString() });
-  }
+  return handleRequest(e);
 }
 
 function getOrCreateSheet(ss, name, headers) {

@@ -119,7 +119,10 @@ async function apiRequest<T>(action: string, payload: Record<string, any> = {}):
   if (apiUrl) {
     try {
       // POST with text/plain body avoids CORS preflight OPTIONS in Apps Script
-      const res = await fetch(apiUrl, {
+      // Also pass ?action= in the URL so it works seamlessly on GET/POST redirects
+      const sep = apiUrl.includes('?') ? '&' : '?'
+      const requestUrl = `${apiUrl}${sep}action=${encodeURIComponent(action)}`
+      const res = await fetch(requestUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action, ...payload }),

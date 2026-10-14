@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { BookOpen, Eye, EyeOff, Lock, LogIn, Mail, Sparkles, User, UserPlus, Users } from 'lucide-react'
 import { useAuthStore } from '../store/useAuthStore'
@@ -93,6 +94,7 @@ export default function AuthPage() {
   const [success, setSuccess] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
+  const navigate = useNavigate()
   const { signIn, signUp } = useAuthStore()
   const { language, setLanguage } = useI18nStore()
   const L = labels[language]
@@ -123,7 +125,15 @@ export default function AuthPage() {
 
     if (mode === 'login') {
       const result = await signIn(identifier, password)
-      if (result.error) setError(result.error)
+      if (result.error) {
+        setError(result.error)
+      } else {
+        const profile = useAuthStore.getState().profile
+        const target = profile?.role === 'admin' ? '/admin'
+                     : profile?.role === 'teacher' ? '/teacher'
+                     : '/'
+        navigate(target, { replace: true })
+      }
     } else {
       if (!fullName.trim()) {
         setError(L.enterFullName)
